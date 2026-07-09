@@ -43,7 +43,7 @@ export default defineConfig({
           { text: 'Demo App', link: 'https://github.com/markup-carve/laravel-carve-demo' },
           { text: 'carve-php', link: 'https://markup-carve.github.io/carve-php/' },
           { text: 'Symfony Bundle', link: 'https://markup-carve.github.io/symfony-carve/' },
-          { text: 'Carve Spec', link: 'https://carve.net/' },
+          { text: 'Carve Spec', link: 'https://github.com/markup-carve/carve' },
           { text: 'Changelog', link: 'https://github.com/markup-carve/laravel-carve/releases' },
           { text: 'Packagist', link: 'https://packagist.org/packages/markup-carve/laravel-carve' },
           { text: 'Issues', link: 'https://github.com/markup-carve/laravel-carve/issues' },

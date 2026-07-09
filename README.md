@@ -152,20 +152,33 @@ Available extensions:
 
 - `admonition` - Admonition blocks (note, tip, warning, danger, etc.)
 - `autolink` - Auto-convert URLs to clickable links
+- `citations` - Bracketed citations with an in-document bibliography (numbered or author-date)
+- `code_callouts` - Numbered callout markers on fenced-code lines with a bound explanation list
 - `code_group` - Transform code-group divs into tabbed interfaces
+- `color_swatch` - Inline color swatches for CSS color tokens via the `color` role
 - `default_attributes` - Add default attributes to elements by type
+- `details` - Render `::: details` blocks as native `<details>`/`<summary>` widgets
 - `external_links` - Configure external link behavior (target, rel)
+- `fenced_render` - Emit fenced blocks of a chosen language as client-rendered hydration elements
 - `frontmatter` - Parse YAML/TOML/JSON frontmatter blocks
+- `glossary` - Glossary definition lists with linked term references
 - `heading_level_shift` - Shift heading levels up/down
+- `heading_numbers` - Auto-number sections and rewrite heading cross-references
 - `heading_permalinks` - Add anchor links to headings
 - `heading_reference` - Link to headings with `[text](#heading)` syntax
+- `index` - Collect `:index[term]` markers into a sorted index block
 - `inline_footnotes` - Convert spans with class to inline footnotes
+- `list_table` - Author tables as nested lists (`::: list-table`) with block content in cells
+- `math_block` - Render `math` fenced code blocks as display math
 - `mentions` - Convert @username to profile links
 - `mermaid` - Render Mermaid diagram code blocks
 - `semantic_span` - Convert spans to `<kbd>`, `<dfn>`, `<abbr>` elements
 - `smart_quotes` - Convert straight quotes to typographic quotes
+- `spoiler` - Hidden spoiler content revealed on interaction
+- `tab_normalize` - Expand tabs in code content to spaces at render time
 - `table_of_contents` - Generate TOC from headings
 - `tabs` - Tabbed content blocks (CSS or ARIA mode)
+- `toc_placement` - Render the TOC exactly where a `::: toc` block appears
 - `wikilinks` - Support `[[Page Name]]` wiki-style links
 
 See [Extensions documentation](https://markup-carve.github.io/laravel-carve/extensions/) for detailed configuration options.
@@ -202,9 +215,9 @@ See the [laravel-carve-demo](https://github.com/markup-carve/laravel-carve-demo)
 
 ## What is Carve?
 
-[Carve](https://carve.net) is a modern light markup language created by John MacFarlane (author of CommonMark/Pandoc). It offers cleaner syntax and more features than Markdown while being easier to parse.
+[Carve](https://github.com/markup-carve/carve) is a post-Markdown lightweight markup language. It builds on the foundations of [Djot](https://github.com/jgm/djot), John MacFarlane's post-Markdown project, and offers cleaner syntax and more features than Markdown while being easier to parse.
 
-Learn more about Carve syntax at [carve.net](https://carve.net).
+Learn more about Carve syntax at [github.com/markup-carve/carve](https://github.com/markup-carve/carve).
 
 ## Ecosystem
 

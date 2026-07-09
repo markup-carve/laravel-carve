@@ -4,7 +4,7 @@ Carve markup language integration for Laravel applications.
 
 ## What is Carve?
 
-[Carve](https://carve.net) is a modern light markup language created by John MacFarlane, the author of CommonMark and Pandoc. It builds on Markdown's foundation while addressing its complexity issues:
+[Carve](https://github.com/markup-carve/carve) is a post-Markdown lightweight markup language building on the foundations of [Djot](https://github.com/jgm/djot), John MacFarlane's post-Markdown project. It addresses Markdown's complexity issues:
 
 - **Cleaner syntax** — more consistent rules, fewer edge cases
 - **More features** — footnotes, definition lists, task lists, math, highlights, and more
