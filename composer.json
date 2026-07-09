@@ -27,7 +27,7 @@
     },
     "require-dev": {
         "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
-        "markup-carve/code-sniffer": "dev-master",
+        "php-collective/code-sniffer": "dev-master",
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^11.5 || ^12.5 || ^13.0"
     },
