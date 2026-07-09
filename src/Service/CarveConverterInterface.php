@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MarkupCarve\LaravelCarve\Service;
+
+use MarkupCarve\Carve\Node\Document;
+
+interface CarveConverterInterface
+{
+    /**
+     * Convert Carve markup to HTML.
+     */
+    public function toHtml(string $carve): string;
+
+    /**
+     * Convert Carve markup to plain text.
+     */
+    public function toText(string $carve): string;
+
+    /**
+     * Parse Carve markup into an AST document.
+     */
+    public function parse(string $carve): Document;
+}

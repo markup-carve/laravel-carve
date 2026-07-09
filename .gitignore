@@ -1,0 +1,10 @@
+/vendor/
+/tmp/
+/.idea/
+composer.lock
+.phpunit.result.cache
+.phpcs.cache
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/.vitepress/grammars/

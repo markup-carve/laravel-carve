@@ -1,0 +1,68 @@
+{
+    "name": "markup-carve/laravel-carve",
+    "description": "Laravel integration for markup-carve/carve-php — Blade directives, services, validation, and caching",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "package",
+        "carve",
+        "markup",
+        "blade",
+        "parser"
+    ],
+    "authors": [
+        {
+            "name": "Markup Carve",
+            "homepage": "https://github.com/markup-carve"
+        }
+    ],
+    "homepage": "https://github.com/markup-carve/laravel-carve",
+    "require": {
+        "php": "^8.2",
+        "markup-carve/carve-php": "^0.1.1",
+        "illuminate/contracts": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/view": "^11.0 || ^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+        "markup-carve/code-sniffer": "dev-master",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^11.5 || ^12.5 || ^13.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "MarkupCarve\\LaravelCarve\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MarkupCarve\\LaravelCarve\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MarkupCarve\\LaravelCarve\\LaravelCarveServiceProvider"
+            ],
+            "aliases": {
+                "Carve": "MarkupCarve\\LaravelCarve\\Facades\\Carve"
+            }
+        }
+    },
+    "scripts": {
+        "cs-check": "phpcs -p",
+        "cs-fix": "phpcbf -p",
+        "stan": "phpstan analyse",
+        "stan-setup": "composer require --dev phpstan/phpstan",
+        "test": "phpunit"
+    }
+}
