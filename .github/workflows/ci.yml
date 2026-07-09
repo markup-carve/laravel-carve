@@ -14,16 +14,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Laravel 11 is EOL and its framework releases carry unpatched
+        # security advisories, which current Composer refuses to install by
+        # default - so the tested matrix starts at Laravel 12.
         include:
           - php: '8.2'
-            laravel: '11.*'
-            testbench: '9.*'
+            laravel: '12.*'
+            testbench: '10.*'
           - php: '8.3'
-            laravel: '11.*'
-            testbench: '9.*'
+            laravel: '12.*'
+            testbench: '10.*'
           - php: '8.4'
             laravel: '12.*'
             testbench: '10.*'
+          - php: '8.3'
+            laravel: '13.*'
+            testbench: '11.*'
           - php: '8.4'
             laravel: '13.*'
             testbench: '11.*'
