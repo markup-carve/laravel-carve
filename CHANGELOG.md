@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - 2026-07-10
+## Unreleased
 
 - `toMarkdown()` and `toAnsi()` on the converter, manager and facade
 - Documented the `mode` config key (static graceful degradation) and the
