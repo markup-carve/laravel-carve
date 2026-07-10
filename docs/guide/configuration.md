@@ -119,3 +119,21 @@ The package registers the following bindings:
 
 - [Safe Mode](safe-mode.md) - understand XSS protection
 - [Caching](caching.md) - improve performance with caching
+
+## Render Mode
+
+Each profile accepts a `mode`:
+
+```php
+'print' => [
+    'safe_mode' => true,
+    'mode' => 'static',
+],
+```
+
+- `interactive` (default) - full HTML for browsers, including script-backed
+  extensions (tabs, diagrams).
+- `static` - the spec's graceful-degradation rules for script-free targets
+  (print, PDF, email): disclosures render `open`, tab panels appear in
+  sequence with their labels, diagram sources are preserved. Content and
+  structure always survive; only the interaction drops.

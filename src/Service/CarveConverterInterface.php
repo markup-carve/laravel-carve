@@ -19,6 +19,16 @@ interface CarveConverterInterface
     public function toText(string $carve): string;
 
     /**
+     * Render Carve markup as Markdown.
+     */
+    public function toMarkdown(string $carve): string;
+
+    /**
+     * Render Carve markup as ANSI terminal output.
+     */
+    public function toAnsi(string $carve): string;
+
+    /**
      * Parse Carve markup into an AST document.
      */
     public function parse(string $carve): Document;

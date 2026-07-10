@@ -42,6 +42,8 @@ use MarkupCarve\LaravelCarve\Facades\Carve;
 
 $html = Carve::toHtml($source);
 $text = Carve::toText($source);
+$md   = Carve::toMarkdown($source);
+$ansi = Carve::toAnsi($source); // terminal output
 $raw  = Carve::toHtmlRaw($trustedSource);
 ```
 

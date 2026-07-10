@@ -57,6 +57,29 @@ class CarveConverterTest extends TestCase
         $this->assertStringContainsString('href=""', $html);
     }
 
+    public function testToMarkdownRendersMarkdown(): void
+    {
+        $converter = new CarveConverter();
+
+        $markdown = $converter->toMarkdown('# Hi
+
+/em/ and *strong*
+');
+
+        $this->assertStringContainsString('# Hi', $markdown);
+        $this->assertStringContainsString('**strong**', $markdown);
+    }
+
+    public function testToAnsiRendersTerminalOutput(): void
+    {
+        $converter = new CarveConverter();
+
+        $ansi = $converter->toAnsi('*strong*');
+
+        $this->assertStringContainsString("\e[", $ansi);
+        $this->assertStringContainsString('strong', $ansi);
+    }
+
     public function testParseReturnsDocument(): void
     {
         $converter = new CarveConverter();

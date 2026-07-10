@@ -313,8 +313,10 @@ Converts @username references to profile links.
 ```php
 [
     'type' => 'mentions',
-    'user_url_template' => 'https://github.com/{username}',
-    'user_class' => 'mention',
+    'mention_url' => 'https://github.com/{name}',
+    'tag_url' => '/tags/{name}',
+    'mention_class' => 'mention',
+    'tag_class' => 'tag',
 ]
 ```
 

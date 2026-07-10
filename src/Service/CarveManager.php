@@ -42,6 +42,23 @@ class CarveManager
     }
 
     /**
+     * Render Carve markup as Markdown using the named converter (or default).
+     */
+    public function toMarkdown(string $carve, string $converter = 'default'): string
+    {
+        return $this->getConverter($converter)->toMarkdown($carve);
+    }
+
+    /**
+     * Render Carve markup as ANSI terminal output using the named converter
+     * (or default).
+     */
+    public function toAnsi(string $carve, string $converter = 'default'): string
+    {
+        return $this->getConverter($converter)->toAnsi($carve);
+    }
+
+    /**
      * Get a named converter instance.
      */
     public function converter(string $name = 'default'): CarveConverterInterface

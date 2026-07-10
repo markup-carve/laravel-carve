@@ -7,6 +7,8 @@ namespace MarkupCarve\LaravelCarve\Service;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use MarkupCarve\Carve\CarveConverter as BaseCarveConverter;
 use MarkupCarve\Carve\Node\Document;
+use MarkupCarve\Carve\Renderer\AnsiRenderer;
+use MarkupCarve\Carve\Renderer\MarkdownRenderer;
 use MarkupCarve\Carve\Renderer\PlainTextRenderer;
 use MarkupCarve\Carve\Renderer\RenderMode;
 use MarkupCarve\Carve\Renderer\SoftBreakMode;
@@ -72,6 +74,20 @@ class CarveConverter implements CarveConverterInterface
         $document = $this->converter->parse($carve);
 
         return $this->textRenderer->render($document);
+    }
+
+    public function toMarkdown(string $carve): string
+    {
+        $document = $this->converter->parse($carve);
+
+        return (new MarkdownRenderer())->render($document);
+    }
+
+    public function toAnsi(string $carve): string
+    {
+        $document = $this->converter->parse($carve);
+
+        return (new AnsiRenderer())->render($document);
     }
 
     public function parse(string $carve): Document

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 - 2026-07-10
+
+- `toMarkdown()` and `toAnsi()` on the converter, manager and facade
+- Documented the `mode` config key (static graceful degradation) and the
+  full extension list; corrected the mentions extension option names
+
 ## 0.1.1 - 2026-07-09
 
 - Fix code-sniffer dev dependency name; CI matrix on Laravel 12 and 13
