@@ -16,6 +16,8 @@ export default defineConfig({
 
   base: '/laravel-carve/',
 
+  cleanUrls: true,
+
   head: [
     ['link', { rel: 'icon', href: '/laravel-carve/favicon.svg', type: 'image/svg+xml' }],
   ],
