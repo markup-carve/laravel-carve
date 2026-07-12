@@ -38,6 +38,197 @@ use MarkupCarve\Carve\Extension\WikilinksExtension;
 class ExtensionFactory
 {
     /**
+     * @var string
+     */
+    public const TYPE_ADMONITION = 'admonition';
+
+    /**
+     * @var string
+     */
+    public const TYPE_AUTOLINK = 'autolink';
+
+    /**
+     * @var string
+     */
+    public const TYPE_CITATIONS = 'citations';
+
+    /**
+     * @var string
+     */
+    public const TYPE_CODE_CALLOUTS = 'code_callouts';
+
+    /**
+     * @var string
+     */
+    public const TYPE_CODE_GROUP = 'code_group';
+
+    /**
+     * @var string
+     */
+    public const TYPE_COLOR_SWATCH = 'color_swatch';
+
+    /**
+     * @var string
+     */
+    public const TYPE_DEFAULT_ATTRIBUTES = 'default_attributes';
+
+    /**
+     * @var string
+     */
+    public const TYPE_DETAILS = 'details';
+
+    /**
+     * @var string
+     */
+    public const TYPE_EXTERNAL_LINKS = 'external_links';
+
+    /**
+     * @var string
+     */
+    public const TYPE_FENCED_RENDER = 'fenced_render';
+
+    /**
+     * @var string
+     */
+    public const TYPE_FRONTMATTER = 'frontmatter';
+
+    /**
+     * @var string
+     */
+    public const TYPE_GLOSSARY = 'glossary';
+
+    /**
+     * @var string
+     */
+    public const TYPE_HEADING_LEVEL_SHIFT = 'heading_level_shift';
+
+    /**
+     * @var string
+     */
+    public const TYPE_HEADING_NUMBERS = 'heading_numbers';
+
+    /**
+     * @var string
+     */
+    public const TYPE_HEADING_PERMALINKS = 'heading_permalinks';
+
+    /**
+     * @var string
+     */
+    public const TYPE_HEADING_REFERENCE = 'heading_reference';
+
+    /**
+     * @var string
+     */
+    public const TYPE_INDEX = 'index';
+
+    /**
+     * @var string
+     */
+    public const TYPE_INLINE_FOOTNOTES = 'inline_footnotes';
+
+    /**
+     * @var string
+     */
+    public const TYPE_LIST_TABLE = 'list_table';
+
+    /**
+     * @var string
+     */
+    public const TYPE_MATH_BLOCK = 'math_block';
+
+    /**
+     * @var string
+     */
+    public const TYPE_MENTIONS = 'mentions';
+
+    /**
+     * @var string
+     */
+    public const TYPE_MERMAID = 'mermaid';
+
+    /**
+     * @var string
+     */
+    public const TYPE_SEMANTIC_SPAN = 'semantic_span';
+
+    /**
+     * @var string
+     */
+    public const TYPE_SMART_QUOTES = 'smart_quotes';
+
+    /**
+     * @var string
+     */
+    public const TYPE_SPOILER = 'spoiler';
+
+    /**
+     * @var string
+     */
+    public const TYPE_TAB_NORMALIZE = 'tab_normalize';
+
+    /**
+     * @var string
+     */
+    public const TYPE_TABLE_OF_CONTENTS = 'table_of_contents';
+
+    /**
+     * @var string
+     */
+    public const TYPE_TABS = 'tabs';
+
+    /**
+     * @var string
+     */
+    public const TYPE_TOC_PLACEMENT = 'toc_placement';
+
+    /**
+     * @var string
+     */
+    public const TYPE_WIKILINKS = 'wikilinks';
+
+    /**
+     * All supported extension type identifiers.
+     *
+     * @return array<string>
+     */
+    public static function types(): array
+    {
+        return [
+            self::TYPE_ADMONITION,
+            self::TYPE_AUTOLINK,
+            self::TYPE_CITATIONS,
+            self::TYPE_CODE_CALLOUTS,
+            self::TYPE_CODE_GROUP,
+            self::TYPE_COLOR_SWATCH,
+            self::TYPE_DEFAULT_ATTRIBUTES,
+            self::TYPE_DETAILS,
+            self::TYPE_EXTERNAL_LINKS,
+            self::TYPE_FENCED_RENDER,
+            self::TYPE_FRONTMATTER,
+            self::TYPE_GLOSSARY,
+            self::TYPE_HEADING_LEVEL_SHIFT,
+            self::TYPE_HEADING_NUMBERS,
+            self::TYPE_HEADING_PERMALINKS,
+            self::TYPE_HEADING_REFERENCE,
+            self::TYPE_INDEX,
+            self::TYPE_INLINE_FOOTNOTES,
+            self::TYPE_LIST_TABLE,
+            self::TYPE_MATH_BLOCK,
+            self::TYPE_MENTIONS,
+            self::TYPE_MERMAID,
+            self::TYPE_SEMANTIC_SPAN,
+            self::TYPE_SMART_QUOTES,
+            self::TYPE_SPOILER,
+            self::TYPE_TAB_NORMALIZE,
+            self::TYPE_TABLE_OF_CONTENTS,
+            self::TYPE_TABS,
+            self::TYPE_TOC_PLACEMENT,
+            self::TYPE_WIKILINKS,
+        ];
+    }
+
+    /**
      * Create a carve extension instance from a config entry.
      *
      * Accepts either a shorthand string (`'autolink'`) or a full array
@@ -56,36 +247,36 @@ class ExtensionFactory
         $type = $config['type'] ?? null;
 
         return match ($type) {
-            'admonition' => $this->admonition($config),
-            'autolink' => $this->autolink($config),
-            'code_group' => $this->codeGroup($config),
-            'default_attributes' => $this->defaultAttributes($config),
-            'external_links' => $this->externalLinks($config),
-            'frontmatter' => $this->frontmatter($config),
-            'heading_level_shift' => $this->headingLevelShift($config),
-            'heading_permalinks' => $this->headingPermalinks($config),
-            'heading_reference' => $this->headingReference($config),
-            'inline_footnotes' => $this->inlineFootnotes($config),
-            'mentions' => $this->mentions($config),
-            'citations' => $this->citations($config),
-            'code_callouts' => new CodeCalloutsExtension(),
-            'color_swatch' => new ColorSwatchExtension(),
-            'details' => new DetailsExtension(),
-            'fenced_render' => $this->fencedRender($config),
-            'glossary' => new GlossaryExtension(),
-            'heading_numbers' => $this->headingNumbers($config),
-            'index' => new IndexExtension(),
-            'list_table' => new ListTableExtension(),
-            'math_block' => $this->mathBlock($config),
-            'mermaid' => $this->fencedRender(['language' => 'mermaid'] + $config),
-            'spoiler' => new SpoilerExtension(),
-            'tab_normalize' => $this->tabNormalize($config),
-            'toc_placement' => new TocPlacementExtension(),
-            'semantic_span' => new SemanticSpanExtension(),
-            'smart_quotes' => $this->smartQuotes($config),
-            'table_of_contents' => $this->tableOfContents($config),
-            'tabs' => $this->tabs($config),
-            'wikilinks' => $this->wikilinks($config),
+            self::TYPE_ADMONITION => $this->admonition($config),
+            self::TYPE_AUTOLINK => $this->autolink($config),
+            self::TYPE_CODE_GROUP => $this->codeGroup($config),
+            self::TYPE_DEFAULT_ATTRIBUTES => $this->defaultAttributes($config),
+            self::TYPE_EXTERNAL_LINKS => $this->externalLinks($config),
+            self::TYPE_FRONTMATTER => $this->frontmatter($config),
+            self::TYPE_HEADING_LEVEL_SHIFT => $this->headingLevelShift($config),
+            self::TYPE_HEADING_PERMALINKS => $this->headingPermalinks($config),
+            self::TYPE_HEADING_REFERENCE => $this->headingReference($config),
+            self::TYPE_INLINE_FOOTNOTES => $this->inlineFootnotes($config),
+            self::TYPE_MENTIONS => $this->mentions($config),
+            self::TYPE_CITATIONS => $this->citations($config),
+            self::TYPE_CODE_CALLOUTS => new CodeCalloutsExtension(),
+            self::TYPE_COLOR_SWATCH => new ColorSwatchExtension(),
+            self::TYPE_DETAILS => new DetailsExtension(),
+            self::TYPE_FENCED_RENDER => $this->fencedRender($config),
+            self::TYPE_GLOSSARY => new GlossaryExtension(),
+            self::TYPE_HEADING_NUMBERS => $this->headingNumbers($config),
+            self::TYPE_INDEX => new IndexExtension(),
+            self::TYPE_LIST_TABLE => new ListTableExtension(),
+            self::TYPE_MATH_BLOCK => $this->mathBlock($config),
+            self::TYPE_MERMAID => $this->fencedRender(['language' => 'mermaid'] + $config),
+            self::TYPE_SPOILER => new SpoilerExtension(),
+            self::TYPE_TAB_NORMALIZE => $this->tabNormalize($config),
+            self::TYPE_TOC_PLACEMENT => new TocPlacementExtension(),
+            self::TYPE_SEMANTIC_SPAN => new SemanticSpanExtension(),
+            self::TYPE_SMART_QUOTES => $this->smartQuotes($config),
+            self::TYPE_TABLE_OF_CONTENTS => $this->tableOfContents($config),
+            self::TYPE_TABS => $this->tabs($config),
+            self::TYPE_WIKILINKS => $this->wikilinks($config),
             default => null,
         };
     }

@@ -69,6 +69,21 @@ Each entry in a profile's `extensions` array is either a shorthand string or an 
 
 Unknown types are silently skipped, so double-check the spelling if an extension does not seem to take effect.
 
+Every type is also available as a constant on `ExtensionFactory` - use those for IDE completion and typo safety (`ExtensionFactory::types()` returns the full list):
+
+```php
+use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
+
+'extensions' => [
+    ExtensionFactory::TYPE_TABLE_OF_CONTENTS,
+    ExtensionFactory::TYPE_HEADING_PERMALINKS,
+    [
+        'type' => ExtensionFactory::TYPE_MENTIONS,
+        'mention_url' => 'https://github.com/{name}',
+    ],
+],
+```
+
 ## Beyond the Named Types
 
 A few carve-php extensions have no config shorthand yet (for example `AsciiHeadingIdsExtension`, `LowercaseHeadingIdsExtension`, `PlusBulletExtension`). You can still add any extension instance programmatically on the underlying converter:

@@ -45,6 +45,24 @@ class ExtensionFactoryTest extends TestCase
         $this->assertNull($this->factory->create(['type' => 'nope']));
     }
 
+    public function testEveryTypeConstantCreatesExtension(): void
+    {
+        foreach (ExtensionFactory::types() as $type) {
+            $this->assertNotNull($this->factory->create($type), sprintf('Type `%s` did not create an extension.', $type));
+        }
+    }
+
+    public function testTypesAreUniqueAndSorted(): void
+    {
+        $types = ExtensionFactory::types();
+
+        $this->assertSame(array_unique($types), $types);
+
+        $sorted = $types;
+        sort($sorted);
+        $this->assertSame($sorted, $types);
+    }
+
     public function testExternalLinksAcceptsOptions(): void
     {
         $ext = $this->factory->create([
