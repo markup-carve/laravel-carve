@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Service;
 
 use MarkupCarve\Carve\Extension\AdmonitionExtension;
+use MarkupCarve\Carve\Extension\AsciiHeadingIdsExtension;
 use MarkupCarve\Carve\Extension\AutolinkExtension;
 use MarkupCarve\Carve\Extension\CitationsExtension;
 use MarkupCarve\Carve\Extension\CodeCalloutsExtension;
@@ -24,8 +25,10 @@ use MarkupCarve\Carve\Extension\HeadingReferenceExtension;
 use MarkupCarve\Carve\Extension\IndexExtension;
 use MarkupCarve\Carve\Extension\InlineFootnotesExtension;
 use MarkupCarve\Carve\Extension\ListTableExtension;
+use MarkupCarve\Carve\Extension\LowercaseHeadingIdsExtension;
 use MarkupCarve\Carve\Extension\MathBlockExtension;
 use MarkupCarve\Carve\Extension\MentionsExtension;
+use MarkupCarve\Carve\Extension\PlusBulletExtension;
 use MarkupCarve\Carve\Extension\SemanticSpanExtension;
 use MarkupCarve\Carve\Extension\SmartQuotesExtension;
 use MarkupCarve\Carve\Extension\SpoilerExtension;
@@ -41,6 +44,11 @@ class ExtensionFactory
      * @var string
      */
     public const TYPE_ADMONITION = 'admonition';
+
+    /**
+     * @var string
+     */
+    public const TYPE_ASCII_HEADING_IDS = 'ascii_heading_ids';
 
     /**
      * @var string
@@ -135,6 +143,11 @@ class ExtensionFactory
     /**
      * @var string
      */
+    public const TYPE_LOWERCASE_HEADING_IDS = 'lowercase_heading_ids';
+
+    /**
+     * @var string
+     */
     public const TYPE_MATH_BLOCK = 'math_block';
 
     /**
@@ -146,6 +159,11 @@ class ExtensionFactory
      * @var string
      */
     public const TYPE_MERMAID = 'mermaid';
+
+    /**
+     * @var string
+     */
+    public const TYPE_PLUS_BULLET = 'plus_bullet';
 
     /**
      * @var string
@@ -196,6 +214,7 @@ class ExtensionFactory
     {
         return [
             self::TYPE_ADMONITION,
+            self::TYPE_ASCII_HEADING_IDS,
             self::TYPE_AUTOLINK,
             self::TYPE_CITATIONS,
             self::TYPE_CODE_CALLOUTS,
@@ -214,9 +233,11 @@ class ExtensionFactory
             self::TYPE_INDEX,
             self::TYPE_INLINE_FOOTNOTES,
             self::TYPE_LIST_TABLE,
+            self::TYPE_LOWERCASE_HEADING_IDS,
             self::TYPE_MATH_BLOCK,
             self::TYPE_MENTIONS,
             self::TYPE_MERMAID,
+            self::TYPE_PLUS_BULLET,
             self::TYPE_SEMANTIC_SPAN,
             self::TYPE_SMART_QUOTES,
             self::TYPE_SPOILER,
@@ -248,6 +269,7 @@ class ExtensionFactory
 
         return match ($type) {
             self::TYPE_ADMONITION => $this->admonition($config),
+            self::TYPE_ASCII_HEADING_IDS => new AsciiHeadingIdsExtension(),
             self::TYPE_AUTOLINK => $this->autolink($config),
             self::TYPE_CODE_GROUP => $this->codeGroup($config),
             self::TYPE_DEFAULT_ATTRIBUTES => $this->defaultAttributes($config),
@@ -267,8 +289,10 @@ class ExtensionFactory
             self::TYPE_HEADING_NUMBERS => $this->headingNumbers($config),
             self::TYPE_INDEX => new IndexExtension(),
             self::TYPE_LIST_TABLE => new ListTableExtension(),
+            self::TYPE_LOWERCASE_HEADING_IDS => new LowercaseHeadingIdsExtension(),
             self::TYPE_MATH_BLOCK => $this->mathBlock($config),
             self::TYPE_MERMAID => $this->fencedRender(['language' => 'mermaid'] + $config),
+            self::TYPE_PLUS_BULLET => new PlusBulletExtension(),
             self::TYPE_SPOILER => new SpoilerExtension(),
             self::TYPE_TAB_NORMALIZE => $this->tabNormalize($config),
             self::TYPE_TOC_PLACEMENT => new TocPlacementExtension(),

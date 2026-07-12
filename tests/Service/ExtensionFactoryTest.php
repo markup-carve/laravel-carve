@@ -52,6 +52,27 @@ class ExtensionFactoryTest extends TestCase
         }
     }
 
+    public function testEveryBundledCarvePhpExtensionHasAType(): void
+    {
+        $files = glob(__DIR__ . '/../../vendor/markup-carve/carve-php/src/Extension/*Extension.php') ?: [];
+        $this->assertNotEmpty($files);
+
+        $missing = [];
+        foreach ($files as $file) {
+            $class = basename($file, '.php');
+            if ($class === 'ExtensionInterface') {
+                continue;
+            }
+            $stem = (string)preg_replace('/Extension$/', '', $class);
+            $type = strtolower((string)preg_replace('/(?<!^)[A-Z]/', '_$0', $stem));
+            if (!in_array($type, ExtensionFactory::types(), true)) {
+                $missing[] = $class;
+            }
+        }
+
+        $this->assertSame([], $missing, 'carve-php bundles extensions without a config type shorthand.');
+    }
+
     public function testTypesAreUniqueAndSorted(): void
     {
         $types = ExtensionFactory::types();

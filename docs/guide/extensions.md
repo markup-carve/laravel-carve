@@ -37,6 +37,7 @@ Each entry in a profile's `extensions` array is either a shorthand string or an 
 | Type | Extension |
 |------|-----------|
 | `admonition` | Admonition callouts (`::: note`, `::: warning`, …) |
+| `ascii_heading_ids` | ASCII-transliterate generated heading ids |
 | `autolink` | Turn bare URLs into links |
 | `citations` | `[@key]` citations with a generated reference list |
 | `code_callouts` | `<1>` markers in code blocks |
@@ -55,9 +56,11 @@ Each entry in a profile's `extensions` array is either a shorthand string or an 
 | `index` | Back-of-book index generation |
 | `inline_footnotes` | `^[inline]` footnotes |
 | `list_table` | Tables written as nested lists |
+| `lowercase_heading_ids` | Lowercase generated heading ids |
 | `math_block` | `$$`-style display math blocks |
 | `mentions` | `@user` mentions and `#tag` tags |
 | `mermaid` | Shorthand for `fenced_render` with `language: mermaid` |
+| `plus_bullet` | Accept `+` as an additional bullet marker |
 | `semantic_span` | Semantic span classes |
 | `smart_quotes` | Locale-aware typographic quotes |
 | `spoiler` | Spoiler blocks |
@@ -86,14 +89,14 @@ use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 
 ## Beyond the Named Types
 
-A few carve-php extensions have no config shorthand yet (for example `AsciiHeadingIdsExtension`, `LowercaseHeadingIdsExtension`, `PlusBulletExtension`). You can still add any extension instance programmatically on the underlying converter:
+Every extension bundled with carve-php has a config type above. For custom or third-party extensions, add the instance programmatically on the underlying converter:
 
 ```php
-use MarkupCarve\Carve\Extension\AsciiHeadingIdsExtension;
+use App\Carve\MyCustomExtension;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 
 $converter = app(CarveManager::class)->converter('docs');
-$converter->getConverter()->addExtension(new AsciiHeadingIdsExtension());
+$converter->getConverter()->addExtension(new MyCustomExtension());
 ```
 
 ## Next Steps
