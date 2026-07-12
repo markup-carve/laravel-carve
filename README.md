@@ -213,7 +213,9 @@ Full documentation: **[markup-carve.github.io/laravel-carve](https://markup-carv
 
 ## Demo Application
 
-See the [laravel-carve-demo](https://github.com/markup-carve/laravel-carve-demo) for a complete example application.
+A full runnable demo app lives at [laravel-carve-demo](https://github.com/markup-carve/laravel-carve-demo): the Blade directives, facade and service usage, form validation, safe-mode comparison, static render mode, plain text extraction and the extension set.
+
+[![laravel-carve demo](https://raw.githubusercontent.com/markup-carve/laravel-carve-demo/main/docs/screenshots/blade-directive.png)](https://github.com/markup-carve/laravel-carve-demo)
 
 ## What is Carve?
 
