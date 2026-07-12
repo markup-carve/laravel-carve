@@ -45,6 +45,45 @@ class ExtensionFactoryTest extends TestCase
         $this->assertNull($this->factory->create(['type' => 'nope']));
     }
 
+    public function testEveryTypeConstantCreatesExtension(): void
+    {
+        foreach (ExtensionFactory::types() as $type) {
+            $this->assertNotNull($this->factory->create($type), sprintf('Type `%s` did not create an extension.', $type));
+        }
+    }
+
+    public function testEveryBundledCarvePhpExtensionHasAType(): void
+    {
+        $files = glob(__DIR__ . '/../../vendor/markup-carve/carve-php/src/Extension/*Extension.php') ?: [];
+        $this->assertNotEmpty($files);
+
+        $missing = [];
+        foreach ($files as $file) {
+            $class = basename($file, '.php');
+            if ($class === 'ExtensionInterface') {
+                continue;
+            }
+            $stem = (string)preg_replace('/Extension$/', '', $class);
+            $type = strtolower((string)preg_replace('/(?<!^)[A-Z]/', '_$0', $stem));
+            if (!in_array($type, ExtensionFactory::types(), true)) {
+                $missing[] = $class;
+            }
+        }
+
+        $this->assertSame([], $missing, 'carve-php bundles extensions without a config type shorthand.');
+    }
+
+    public function testTypesAreUniqueAndSorted(): void
+    {
+        $types = ExtensionFactory::types();
+
+        $this->assertSame(array_unique($types), $types);
+
+        $sorted = $types;
+        sort($sorted);
+        $this->assertSame($sorted, $types);
+    }
+
     public function testExternalLinksAcceptsOptions(): void
     {
         $ext = $this->factory->create([
