@@ -12,6 +12,8 @@ use MarkupCarve\LaravelCarve\Service\CarveManager;
  * @method static string toHtml(string $carve, string $converter = 'default')
  * @method static string toHtmlRaw(string $carve)
  * @method static string toText(string $carve, string $converter = 'default')
+ * @method static string toMarkdown(string $carve, string $converter = 'default')
+ * @method static string toAnsi(string $carve, string $converter = 'default')
  * @method static \MarkupCarve\LaravelCarve\Service\CarveConverterInterface converter(string $name = 'default')
  * @method static array<string, \MarkupCarve\LaravelCarve\Service\CarveConverterInterface> getConverters()
  */

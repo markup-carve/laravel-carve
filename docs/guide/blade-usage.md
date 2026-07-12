@@ -21,7 +21,7 @@ Converts Carve markup to HTML *without* safe mode. Use only for trusted content.
 @carveRaw($trustedArticle->body)
 ```
 
-This bypasses XSS protection — dangerous URLs (`javascript:`, `data:`) and raw HTML blocks are preserved. Never use with user-generated content.
+This disables safe mode: explicit raw-HTML passthrough (```` ```=html ```` blocks and `` `...`{=html} `` inline) is emitted verbatim instead of escaped. Dangerous URLs (`javascript:`, `data:`) are still sanitized in both modes. Never use `@carveRaw` with user-generated content - see [Safe Mode](safe-mode.md).
 
 ### `@carveText` Directive
 

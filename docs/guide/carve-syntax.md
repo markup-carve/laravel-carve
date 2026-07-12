@@ -1,11 +1,12 @@
 # Carve Syntax Quick Reference
 
-Carve is a light markup language similar to Markdown but with cleaner, more consistent syntax.
+Carve is a light markup language similar to Markdown but with cleaner, more consistent syntax. Its mnemonic: **the markup looks like its output**.
 
 For comprehensive syntax documentation, see:
 
-- [Official Carve specification](https://htmlpreview.github.io/?https://github.com/jgm/carve/blob/master/doc/syntax.html)
-- [markup-carve/carve-php documentation](https://markup-carve.github.io/carve-php/guide/syntax) — includes PHP-specific extensions
+- [Carve documentation](https://markup-carve.github.io/carve/) - the canonical docs, including the [cheat sheet](https://markup-carve.github.io/carve/cheatsheet) and the [formal grammar](https://markup-carve.github.io/carve/grammar)
+- [Coming from Markdown](https://markup-carve.github.io/carve/migrate-from-markdown) - task-oriented migration guide
+- [markup-carve/carve-php](https://github.com/markup-carve/carve-php) - the PHP implementation this package wraps
 
 ## Key Differences from Markdown
 
@@ -13,31 +14,52 @@ If you're coming from Markdown, these are the main syntax changes:
 
 | Feature | Markdown | Carve |
 |---------|----------|------|
-| Emphasis (italic) | `*text*` or `_text_` | `_text_` |
-| Strong (bold) | `**text**` or `__text__` | `*text*` |
-| Code fence | ` ```lang ` | ` ``` lang ` (space required) |
+| Italic | `*text*` or `_text_` | `/text/` |
+| Bold | `**text**` or `__text__` | `*text*` |
+| Bold italic | `***text***` | `/*text*/` |
+| Underline | (not standard) | `_text_` |
+| Strikethrough | `~~text~~` (GFM) | `~text~` |
+| Starting a list | may directly follow a paragraph | needs a blank line before the first item |
+| Heading id | `# Title {#id}` (some flavors) | attribute line *above* the heading: `{#id}` |
+| Table header | delimiter row `\|---\|` | `\|=` header cells (delimiter row also accepted) |
+
+Fenced code blocks work exactly like Markdown: `` ```php `` with the language directly after the fence. (A space after the fence, the Djot style, is also accepted.)
+
+The list rule deserves a callout: a `-` or `1.` line directly after a paragraph line does **not** start a list - it folds into the paragraph. Add a blank line before the first item:
+
+```carve
+Some paragraph text.
+
+- now this is a list
+- second item
+```
 
 ## Quick Examples
 
 ### Inline Formatting
 
 ```carve
-_emphasis_ (italic)
-*strong* (bold)
-_*strong emphasis*_ (bold italic)
-`inline code`
-~subscript~
+/italic/
+*bold*
+/*bold italic*/
+_underline_
+~strikethrough~
 ^superscript^
-{+insert+}
-{-delete-}
-{=highlight=}
+,subscript,
+=highlight=
+`inline code`
+{+inserted+}
+{-deleted-}
 ```
+
+Bare delimiters work at word boundaries; use the brace form intraword, e.g. `H{,2,}O`.
 
 ### Links and Images
 
 ```carve
 [Link text](https://example.com)
 ![Alt text](image.png)
+<https://example.com>
 ```
 
 ### Lists
@@ -52,38 +74,36 @@ _*strong emphasis*_ (bold italic)
 
 ### Code Blocks
 
-Note the space between ``` and the language name:
-
 ````carve
-``` php
+```php
 $code = 'example';
 ```
 ````
 
 ### Attributes
 
+Block attributes go on a standalone line *before* the block - including headings, where a trailing `{...}` is literal text:
+
 ```carve
 {.warning}
 This paragraph has a warning class.
 
-# Heading {#custom-id}
+{#custom-id}
+# Heading
 ```
 
-### Divs
+### Divs and Admonitions
 
 ```carve
 ::: note
-This is a div with class "note".
+This is a note admonition.
+:::
+
+::: my-class
+Any other name renders as a div with that class.
 :::
 ```
 
-## PHP-Specific Extensions
+## Extensions
 
-The [markup-carve/carve-php](https://github.com/markup-carve/carve-php) library includes several extensions beyond standard Carve:
-
-- Fenced comments (`%%%`)
-- Abbreviations (`*[ABBR]: definition`)
-- Table rowspan/colspan
-- Boolean attributes
-
-See the [full syntax documentation](https://markup-carve.github.io/carve-php/guide/syntax) for details.
+Beyond the core syntax, carve-php bundles optional extensions (mentions, wikilinks, table of contents, tabs, math, citations, and more). See the [Extensions](extensions.md) page for how to enable them in Laravel, and the [feature tier overview](https://markup-carve.github.io/carve/extensions#feature-tiers-quick-reference) in the canonical docs for what is core vs. opt-in.

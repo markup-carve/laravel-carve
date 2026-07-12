@@ -14,7 +14,7 @@ hero:
       link: /guide/
     - theme: alt
       text: Extensions
-      link: /extensions/
+      link: /guide/extensions
     - theme: alt
       text: View on GitHub
       link: https://github.com/markup-carve/laravel-carve
@@ -31,7 +31,7 @@ features:
     details: Different converter configurations for different contexts (user content, admin, CMS)
   - icon: "\uD83E\uDDE9"
     title: Extensible
-    details: 17 built-in extensions \u2014 autolink, mentions, TOC, heading permalinks, and more
+    details: Enable carve-php's bundled extensions per profile \u2014 autolink, mentions, TOC, tabs, math, citations, and more
   - icon: "\u2705"
     title: Validation
     details: ValidCarve rule for request validation of Carve markup input
