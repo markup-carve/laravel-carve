@@ -29,31 +29,45 @@ The `@carve` directive uses safe mode by default. For trusted content (admin/CMS
 
 ## What Safe Mode Does
 
-When enabled (the default), safe mode:
+Carve is safe by design; several protections are active *regardless* of safe mode:
 
-1. **Sanitizes URLs** — blocks `javascript:`, `data:`, and other dangerous protocols
-2. **Removes raw HTML** — strips any embedded HTML/scripts
-3. **Validates links** — ensures URLs are safe
+- **Bare HTML tags are always literal text.** `<script>` in Carve source renders as the escaped text `&lt;script&gt;`, never as HTML. This is the key difference from Markdown, which passes raw HTML through by default.
+- **Dangerous URLs are always sanitized.** `javascript:`, `data:` and other unsafe protocols in links are emptied in both modes.
 
-### Example: Dangerous Link
+Safe mode governs the one deliberate escape hatch - the **explicit raw-HTML passthrough** (```` ```=html ```` blocks and `` `...`{=html} `` inline):
+
+- **Safe mode on** (default): passthrough content is escaped like any other text.
+- **Safe mode off** (`@carveRaw` / `safe_mode: false`): passthrough content is emitted verbatim.
+
+### Example: Raw HTML Passthrough
 
 Input:
 
-```carve
-[Click me](javascript:alert('XSS'))
+````carve
+```=html
+<script>alert(1)</script>
 ```
+````
 
 With `@carve` (safe mode, default):
 
 ```html
-<p><a href="">Click me</a></p>
+&lt;script&gt;alert(1)&lt;/script&gt;
 ```
 
 With `@carveRaw` (no safe mode):
 
 ```html
-<p><a href="javascript:alert('XSS')">Click me</a></p>
+<script>alert(1)</script>
 ```
+
+### Example: Dangerous Link (sanitized in both modes)
+
+```carve
+[Click me](javascript:alert)
+```
+
+renders as `<p><a href="">Click me</a></p>` with `@carve` *and* with `@carveRaw` - URL sanitization is not affected by safe mode.
 
 ## Using Named Converters
 
@@ -95,7 +109,7 @@ return [
 
 ## More Information
 
-For advanced safe mode options (custom blocked schemes, strict mode), see the [markup-carve/carve-php safe mode documentation](https://markup-carve.github.io/carve-php/guide/safe-mode).
+For the full security model (trust boundaries, the `=html` passthrough, per-engine switches), see the [Carve security documentation](https://markup-carve.github.io/carve/security) and the [markup-carve/carve-php README](https://github.com/markup-carve/carve-php).
 
 ## Next Steps
 

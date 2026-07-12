@@ -34,7 +34,7 @@ class ArticleController extends Controller
 Converts Carve markup to HTML.
 
 ```php
-$html = $this->carve->toHtml('*Hello* _world_!');
+$html = $this->carve->toHtml('*Hello* /world/!');
 // <p><strong>Hello</strong> <em>world</em>!</p>
 ```
 
@@ -43,8 +43,25 @@ $html = $this->carve->toHtml('*Hello* _world_!');
 Converts Carve markup to plain text.
 
 ```php
-$text = $this->carve->toText('*Hello* _world_!');
+$text = $this->carve->toText('*Hello* /world/!');
 // Hello world!
+```
+
+### `toMarkdown(string $carve): string`
+
+Renders Carve markup as Markdown - useful for export or interop with Markdown-only consumers.
+
+```php
+$markdown = $this->carve->toMarkdown('*Hello* /world/!');
+// **Hello** *world*!
+```
+
+### `toAnsi(string $carve): string`
+
+Renders Carve markup as ANSI terminal output - useful in Artisan commands.
+
+```php
+$this->line($this->carve->toAnsi($changelogEntry));
 ```
 
 ### `parse(string $carve): Document`

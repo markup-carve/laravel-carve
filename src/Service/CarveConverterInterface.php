@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Service;
 
+use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\Node\Document;
 
 interface CarveConverterInterface
 {
+    /**
+     * Get the underlying carve-php converter, e.g. to add extensions programmatically.
+     */
+    public function getConverter(): CarveConverter;
+
     /**
      * Convert Carve markup to HTML.
      */
