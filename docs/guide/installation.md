@@ -33,7 +33,7 @@ php artisan vendor:publish --tag=carve-config
 Add a simple test in any Blade view:
 
 ```blade
-@carve('*Hello* _world_!')
+@carve('*Hello* /world/!')
 ```
 
 This should render:
@@ -41,6 +41,8 @@ This should render:
 ```html
 <p><strong>Hello</strong> <em>world</em>!</p>
 ```
+
+(Note the Carve emphasis syntax: `*bold*` and `/italic/` - see [Carve Syntax](carve-syntax.md).)
 
 ## Next Steps
 

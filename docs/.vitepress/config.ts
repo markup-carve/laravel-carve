@@ -25,7 +25,7 @@ export default defineConfig({
       {
         ...carveGrammar,
         name: 'carve',
-        aliases: ['dj', 'Carve'],
+        aliases: ['crv', 'Carve'],
       },
     ],
   },
@@ -35,15 +35,14 @@ export default defineConfig({
 
     nav: [
       { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
-      { text: 'Extensions', link: '/extensions/', activeMatch: '/extensions/' },
       {
         text: 'Links',
         items: [
           { text: 'Playground', link: 'https://sandbox.dereuromark.de/sandbox/carve' },
           { text: 'Demo App', link: 'https://github.com/markup-carve/laravel-carve-demo' },
-          { text: 'carve-php', link: 'https://markup-carve.github.io/carve-php/' },
-          { text: 'Symfony Bundle', link: 'https://markup-carve.github.io/symfony-carve/' },
-          { text: 'Carve Spec', link: 'https://github.com/markup-carve/carve' },
+          { text: 'carve-php', link: 'https://github.com/markup-carve/carve-php' },
+          { text: 'Symfony Bundle', link: 'https://github.com/markup-carve/symfony-carve' },
+          { text: 'Carve Docs', link: 'https://markup-carve.github.io/carve/' },
           { text: 'Changelog', link: 'https://github.com/markup-carve/laravel-carve/releases' },
           { text: 'Packagist', link: 'https://packagist.org/packages/markup-carve/laravel-carve' },
           { text: 'Issues', link: 'https://github.com/markup-carve/laravel-carve/issues' },
@@ -72,16 +71,11 @@ export default defineConfig({
         {
           text: 'Advanced',
           items: [
+            { text: 'Extensions', link: '/guide/extensions' },
             { text: 'Safe Mode', link: '/guide/safe-mode' },
             { text: 'Caching', link: '/guide/caching' },
             { text: 'Carve Syntax', link: '/guide/carve-syntax' },
           ],
-        },
-      ],
-      '/extensions/': [
-        {
-          text: 'Extensions',
-          link: '/extensions/',
         },
       ],
     },
@@ -95,13 +89,13 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/markup-carve/laravel-carve/edit/master/docs/:path',
+      pattern: 'https://github.com/markup-carve/laravel-carve/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright PHP Collective',
+      copyright: 'Copyright Markup Carve',
     },
   },
 })

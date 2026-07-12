@@ -11,10 +11,10 @@ The package works out of the box with sensible defaults. Safe mode is enabled by
 return [
     'converters' => [
         'default' => [
-            'safe_mode' => true,             // XSS protection (enabled by default)
-            'significant_newlines' => false, // Markdown-like line break handling
-            'soft_break_mode' => null,       // newline, space or br
-            'xhtml' => false,                // XHTML-compatible output
+            'safe_mode' => true,        // XSS protection (enabled by default)
+            'mode' => 'interactive',    // 'interactive' or 'static'
+            'soft_break_mode' => null,  // null, 'newline', 'space' or 'br'
+            'xhtml' => false,           // XHTML-compatible output
             'extensions' => [],
         ],
 
@@ -34,11 +34,11 @@ return [
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `safe_mode` | bool | `true` | XSS protection - disable only for trusted content |
-| `significant_newlines` | bool | `false` | Allow blocks to interrupt paragraphs without blank lines (markdown-like behavior) |
-| `soft_break_mode` | string | `null` | How to render soft breaks: `newline`, `space`, or `br` |
+| `safe_mode` | bool | `true` | Escape the explicit `=html` raw passthrough - disable only for trusted content (see [Safe Mode](safe-mode.md)) |
+| `mode` | string | `'interactive'` | Render mode: `interactive` or `static` (see [Render Mode](#render-mode)) |
+| `soft_break_mode` | string\|null | `null` | How to render soft breaks: `newline`, `space`, or `br` |
 | `xhtml` | bool | `false` | Output XHTML-compatible markup (self-closing tags) |
-| `extensions` | array | `[]` | Carve extensions to enable for this profile |
+| `extensions` | array | `[]` | Carve extensions to enable for this profile (see [Extensions](extensions.md)) |
 
 ## Converter Profiles
 
@@ -115,11 +115,6 @@ The package registers the following bindings:
 | `carve` | Alias for `CarveManager` |
 | `MarkupCarve\LaravelCarve\Service\CarveConverterInterface` | Default converter instance |
 
-## Next Steps
-
-- [Safe Mode](safe-mode.md) - understand XSS protection
-- [Caching](caching.md) - improve performance with caching
-
 ## Render Mode
 
 Each profile accepts a `mode`:
@@ -137,3 +132,9 @@ Each profile accepts a `mode`:
   (print, PDF, email): disclosures render `open`, tab panels appear in
   sequence with their labels, diagram sources are preserved. Content and
   structure always survive; only the interaction drops.
+
+## Next Steps
+
+- [Extensions](extensions.md) - enable and configure Carve extensions
+- [Safe Mode](safe-mode.md) - understand XSS protection
+- [Caching](caching.md) - improve performance with caching
