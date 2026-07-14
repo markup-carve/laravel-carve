@@ -44,15 +44,15 @@ Some paragraph text.
 /*bold italic*/
 _underline_
 ~strikethrough~
-^superscript^
-,subscript,
+{^superscript^}
+{,subscript,}
 =highlight=
 `inline code`
 {+inserted+}
 {-deleted-}
 ```
 
-Bare delimiters work at word boundaries; use the brace form intraword, e.g. `H{,2,}O`.
+The emphasis delimiters (`/ * _ ~ =`) work bare at word boundaries; use the brace form intraword. Superscript and subscript exist **only** in the brace form (`{^...^}` / `{,...,}`) - a bare `^` or `,` is always literal text, e.g. `H{,2,}O`.
 
 ### Links and Images
 
