@@ -174,6 +174,7 @@ Available extensions:
 - `math_block` - Render `math` fenced code blocks as display math
 - `mentions` - Convert @username to profile links
 - `mermaid` - Render Mermaid diagram code blocks
+- `plantuml` - Render PlantUML/`puml` diagram code blocks (needs a client renderer; see below)
 - `semantic_span` - Convert spans to `<kbd>`, `<dfn>`, `<abbr>` elements
 - `smart_quotes` - Convert straight quotes to typographic quotes
 - `spoiler` - Hidden spoiler content revealed on interaction
@@ -184,6 +185,25 @@ Available extensions:
 - `wikilinks` - Support `[[Page Name]]` wiki-style links
 
 See [Extensions documentation](https://markup-carve.github.io/laravel-carve/extensions/) for detailed configuration options.
+
+### Client-side diagram rendering
+
+The diagram extensions emit a `<pre class="LANG">` hydration element; the browser
+turns it into a picture. Mermaid, WaveDrom, Vega-Lite and Chart each render once
+you load their library. **PlantUML, D2 and Graphviz have no browser library** and
+render via a [Kroki](https://kroki.io) server. The shared helper from
+[`@markup-carve/carve-grammars`](https://github.com/markup-carve/carve-grammars)
+does this in a few lines:
+
+```js
+import { renderKrokiDiagrams } from '@markup-carve/carve-grammars/diagrams/kroki'
+
+// after the rendered Carve HTML is on the page
+await renderKrokiDiagrams(document.querySelector('.carve-content'))
+```
+
+For a build-time / SSR pipeline, render diagrams server-side instead so no client
+JS ships.
 
 ### Validation Rule
 

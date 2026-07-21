@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
+use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\Extension\AutolinkExtension;
 use MarkupCarve\Carve\Extension\ExternalLinksExtension;
+use MarkupCarve\Carve\Extension\FencedRenderExtension;
 use MarkupCarve\Carve\Extension\MentionsExtension;
 use MarkupCarve\Carve\Extension\SemanticSpanExtension;
 use MarkupCarve\Carve\Extension\SmartQuotesExtension;
@@ -124,5 +126,50 @@ class ExtensionFactoryTest extends TestCase
         $ext = $this->factory->create('wikilinks');
 
         $this->assertInstanceOf(WikilinksExtension::class, $ext);
+    }
+
+    public function testPlantumlShorthandIsAFencedRenderExtension(): void
+    {
+        $ext = $this->factory->create('plantuml');
+
+        $this->assertInstanceOf(FencedRenderExtension::class, $ext);
+    }
+
+    public function testPlantumlShorthandRendersPlantumlBlock(): void
+    {
+        $ext = $this->factory->create('plantuml');
+        $this->assertNotNull($ext);
+
+        $converter = new CarveConverter();
+        $converter->addExtension($ext);
+        $html = $converter->convert("``` plantuml\n@startuml\nA -> B\n@enduml\n```");
+
+        $this->assertStringContainsString('<pre class="plantuml">', $html);
+        // Text mode keeps the source as escaped text; `>` survives for arrows.
+        $this->assertStringContainsString('A -> B', $html);
+    }
+
+    public function testPumlLanguageAlsoRendersPlantumlBlock(): void
+    {
+        $ext = $this->factory->create('plantuml');
+        $this->assertNotNull($ext);
+
+        $converter = new CarveConverter();
+        $converter->addExtension($ext);
+        $html = $converter->convert("``` puml\n@startuml\nA -> B\n@enduml\n```");
+
+        $this->assertStringContainsString('<pre class="plantuml">', $html);
+    }
+
+    public function testPlantumlShorthandHonorsCssClassOverride(): void
+    {
+        $ext = $this->factory->create(['type' => 'plantuml', 'css_class' => 'uml']);
+        $this->assertNotNull($ext);
+
+        $converter = new CarveConverter();
+        $converter->addExtension($ext);
+        $html = $converter->convert("``` plantuml\nA -> B\n```");
+
+        $this->assertStringContainsString('<pre class="uml">', $html);
     }
 }

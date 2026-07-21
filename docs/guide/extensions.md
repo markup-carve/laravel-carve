@@ -60,6 +60,7 @@ Each entry in a profile's `extensions` array is either a shorthand string or an 
 | `math_block` | `$$`-style display math blocks |
 | `mentions` | `@user` mentions and `#tag` tags |
 | `mermaid` | Shorthand for `fenced_render` with `language: mermaid` |
+| `plantuml` | Shorthand for `fenced_render` with `language: [plantuml, puml]`, class `plantuml` |
 | `plus_bullet` | Accept `+` as an additional bullet marker |
 | `semantic_span` | Semantic span classes |
 | `smart_quotes` | Locale-aware typographic quotes |

@@ -163,6 +163,11 @@ class ExtensionFactory
     /**
      * @var string
      */
+    public const TYPE_PLANTUML = 'plantuml';
+
+    /**
+     * @var string
+     */
     public const TYPE_PLUS_BULLET = 'plus_bullet';
 
     /**
@@ -237,6 +242,7 @@ class ExtensionFactory
             self::TYPE_MATH_BLOCK,
             self::TYPE_MENTIONS,
             self::TYPE_MERMAID,
+            self::TYPE_PLANTUML,
             self::TYPE_PLUS_BULLET,
             self::TYPE_SEMANTIC_SPAN,
             self::TYPE_SMART_QUOTES,
@@ -292,6 +298,7 @@ class ExtensionFactory
             self::TYPE_LOWERCASE_HEADING_IDS => new LowercaseHeadingIdsExtension(),
             self::TYPE_MATH_BLOCK => $this->mathBlock($config),
             self::TYPE_MERMAID => $this->fencedRender(['language' => 'mermaid'] + $config),
+            self::TYPE_PLANTUML => $this->fencedRender(['language' => ['plantuml', 'puml']] + $config),
             self::TYPE_PLUS_BULLET => new PlusBulletExtension(),
             self::TYPE_SPOILER => new SpoilerExtension(),
             self::TYPE_TAB_NORMALIZE => $this->tabNormalize($config),
