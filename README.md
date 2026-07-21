@@ -190,20 +190,34 @@ See [Extensions documentation](https://markup-carve.github.io/laravel-carve/exte
 
 The diagram extensions emit a `<pre class="LANG">` hydration element; the browser
 turns it into a picture. Mermaid, WaveDrom, Vega-Lite and Chart each render once
-you load their library. **PlantUML, D2 and Graphviz have no browser library** and
-render via a [Kroki](https://kroki.io) server. The shared helper from
+you load their library. **Graphviz and D2** render fully offline with the
+WebAssembly helpers from
 [`@markup-carve/carve-grammars`](https://github.com/markup-carve/carve-grammars)
-does this in a few lines:
+(no server, no external call):
+
+```js
+import { renderDiagrams } from '@markup-carve/carve-grammars/diagrams'
+
+await renderDiagrams(document.querySelector('.carve-content')) // graphviz + d2, offline
+```
+
+**PlantUML** is the exception - it has no practical in-browser renderer and needs
+a [Kroki](https://kroki.io) server:
 
 ```js
 import { renderKrokiDiagrams } from '@markup-carve/carve-grammars/diagrams/kroki'
 
-// after the rendered Carve HTML is on the page
-await renderKrokiDiagrams(document.querySelector('.carve-content'))
+await renderKrokiDiagrams(document.querySelector('.carve-content'), {
+    server: 'https://kroki.internal', // your own instance
+})
 ```
 
-For a build-time / SSR pipeline, render diagrams server-side instead so no client
-JS ships.
+> ⚠️ **Privacy / GDPR:** the default Kroki server is the public `https://kroki.io`,
+> so the PlantUML source is sent to a **third party outside your domain**. For
+> sensitive content, or to stay offline, point `server` at a self-hosted or
+> localhost Kroki so no data leaves your control, and disclose the external call
+> to end users where required. For a build-time / SSR pipeline, render diagrams
+> server-side instead so no client JS ships.
 
 ### Validation Rule
 
