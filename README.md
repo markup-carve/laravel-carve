@@ -174,6 +174,7 @@ Available extensions:
 - `math_block` - Render `math` fenced code blocks as display math
 - `mentions` - Convert @username to profile links
 - `mermaid` - Render Mermaid diagram code blocks
+- `plantuml` - Render PlantUML/`puml` diagram code blocks (needs a client renderer; see below)
 - `semantic_span` - Convert spans to `<kbd>`, `<dfn>`, `<abbr>` elements
 - `smart_quotes` - Convert straight quotes to typographic quotes
 - `spoiler` - Hidden spoiler content revealed on interaction
@@ -184,6 +185,39 @@ Available extensions:
 - `wikilinks` - Support `[[Page Name]]` wiki-style links
 
 See [Extensions documentation](https://markup-carve.github.io/laravel-carve/extensions/) for detailed configuration options.
+
+### Client-side diagram rendering
+
+The diagram extensions emit a `<pre class="LANG">` hydration element; the browser
+turns it into a picture. Mermaid, WaveDrom, Vega-Lite and Chart each render once
+you load their library. **Graphviz and D2** render fully offline with the
+WebAssembly helpers from
+[`@markup-carve/carve-grammars`](https://github.com/markup-carve/carve-grammars)
+(no server, no external call):
+
+```js
+import { renderDiagrams } from '@markup-carve/carve-grammars/diagrams'
+
+await renderDiagrams(document.querySelector('.carve-content')) // graphviz + d2, offline
+```
+
+**PlantUML** is the exception - it has no practical in-browser renderer and needs
+a [Kroki](https://kroki.io) server:
+
+```js
+import { renderKrokiDiagrams } from '@markup-carve/carve-grammars/diagrams/kroki'
+
+await renderKrokiDiagrams(document.querySelector('.carve-content'), {
+    server: 'https://kroki.internal', // your own instance
+})
+```
+
+> ⚠️ **Privacy / GDPR:** the default Kroki server is the public `https://kroki.io`,
+> so the PlantUML source is sent to a **third party outside your domain**. For
+> sensitive content, or to stay offline, point `server` at a self-hosted or
+> localhost Kroki so no data leaves your control, and disclose the external call
+> to end users where required. For a build-time / SSR pipeline, render diagrams
+> server-side instead so no client JS ships.
 
 ### Validation Rule
 
