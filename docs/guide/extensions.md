@@ -53,6 +53,7 @@ Each entry in a profile's `extensions` array is either a shorthand string or an 
 | `heading_numbers` | Numbered headings |
 | `heading_permalinks` | Anchor links on headings |
 | `heading_reference` | Wiki-style `[Heading Name][]` links to headings |
+| `img_fence` | Render an `img`/`image` fence as sanitized SVG (sandboxed data-URI image) |
 | `index` | Back-of-book index generation |
 | `inline_footnotes` | `^[inline]` footnotes |
 | `list_table` | Tables written as nested lists |

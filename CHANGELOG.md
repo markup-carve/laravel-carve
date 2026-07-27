@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Require carve-php `^0.1.3` (cross-engine convergence: strict column-0,
+  unresolved footnote-ref, tight-item trailing text, list looseness)
+
+### Added
+
+- `img_fence` extension shorthand for the carve-php `ImgFenceExtension`
+  (sanitized SVG `img`/`image` fence)
+
 ## 0.1.2 - 2026-07-10
 
 - `toMarkdown()` and `toAnsi()` on the converter, manager and facade

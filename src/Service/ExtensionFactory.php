@@ -22,6 +22,7 @@ use MarkupCarve\Carve\Extension\HeadingLevelShiftExtension;
 use MarkupCarve\Carve\Extension\HeadingNumbersExtension;
 use MarkupCarve\Carve\Extension\HeadingPermalinksExtension;
 use MarkupCarve\Carve\Extension\HeadingReferenceExtension;
+use MarkupCarve\Carve\Extension\ImgFenceExtension;
 use MarkupCarve\Carve\Extension\IndexExtension;
 use MarkupCarve\Carve\Extension\InlineFootnotesExtension;
 use MarkupCarve\Carve\Extension\ListTableExtension;
@@ -124,6 +125,11 @@ class ExtensionFactory
      * @var string
      */
     public const TYPE_HEADING_REFERENCE = 'heading_reference';
+
+    /**
+     * @var string
+     */
+    public const TYPE_IMG_FENCE = 'img_fence';
 
     /**
      * @var string
@@ -235,6 +241,7 @@ class ExtensionFactory
             self::TYPE_HEADING_NUMBERS,
             self::TYPE_HEADING_PERMALINKS,
             self::TYPE_HEADING_REFERENCE,
+            self::TYPE_IMG_FENCE,
             self::TYPE_INDEX,
             self::TYPE_INLINE_FOOTNOTES,
             self::TYPE_LIST_TABLE,
@@ -293,6 +300,7 @@ class ExtensionFactory
             self::TYPE_FENCED_RENDER => $this->fencedRender($config),
             self::TYPE_GLOSSARY => new GlossaryExtension(),
             self::TYPE_HEADING_NUMBERS => $this->headingNumbers($config),
+            self::TYPE_IMG_FENCE => $this->imgFence($config),
             self::TYPE_INDEX => new IndexExtension(),
             self::TYPE_LIST_TABLE => new ListTableExtension(),
             self::TYPE_LOWERCASE_HEADING_IDS => new LowercaseHeadingIdsExtension(),
@@ -490,6 +498,24 @@ class ExtensionFactory
         /** @var array<string>|string $language */
 
         return new FencedRenderExtension($language, ...$args);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function imgFence(array $config): ImgFenceExtension
+    {
+        /** @var array{allowStyle?: bool, allowLinks?: bool, allowAnimation?: bool, allowExternalImages?: bool, allowInline?: bool} $args */
+        $args = [];
+        $this->setBool($args, 'allowStyle', $config, 'allow_style');
+        $this->setBool($args, 'allowLinks', $config, 'allow_links');
+        $this->setBool($args, 'allowAnimation', $config, 'allow_animation');
+        $this->setBool($args, 'allowExternalImages', $config, 'allow_external_images');
+        $this->setBool($args, 'allowInline', $config, 'allow_inline');
+        $language = $config['language'] ?? null;
+        /** @var array<string>|string|null $language */
+
+        return new ImgFenceExtension($language, ...$args);
     }
 
     /**
