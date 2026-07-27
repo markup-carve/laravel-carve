@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.3 - 2026-07-27
+
 ### Changed
 
 - Require carve-php `^0.1.3` (cross-engine convergence: strict column-0,
@@ -9,6 +11,8 @@
 
 ### Added
 
+- `plantuml` extension shorthand on `ExtensionFactory`
+- `TYPE_*` constants and a `types()` method on `ExtensionFactory`
 - `img_fence` extension shorthand for the carve-php `ImgFenceExtension`
   (sanitized SVG `img`/`image` fence)
 
