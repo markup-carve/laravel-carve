@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.4 - 2026-08-10
+
+### Changed
+
+- Require carve-php `^0.1.4`, the current security and parser/writer
+  convergence release
+- Replace the floating code-sniffer development dependency with the tagged
+  `^0.6.0` series
+- Move CI, documentation, and drift workflows to the current GitHub Actions
+  runtime
+
 ## 0.1.3 - 2026-07-27
 
 ### Changed
