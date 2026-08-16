@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add per-converter symbol replacements (`symbols`) and source-line attributes (`source_lines`)
+- Fix the render cache serving one converter's HTML to another: the cache key now identifies the converter's settings, not just the source
+
 ## 0.1.4 - 2026-08-10
 
 ### Changed

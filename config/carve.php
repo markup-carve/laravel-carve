@@ -32,6 +32,13 @@ return [
             // Output XHTML-compatible self-closing tags
             'xhtml' => false,
 
+            // Trusted HTML replacements for :name: shortcodes. Values are
+            // inserted without escaping, so never populate this from user input.
+            'symbols' => [],
+
+            // Add 1-based data-source-line attributes for editor scroll-sync
+            'source_lines' => false,
+
             // Carve extensions to enable for this profile. See docs/extensions.md.
             'extensions' => [],
         ],

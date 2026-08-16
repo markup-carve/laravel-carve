@@ -80,6 +80,8 @@ return [
         // Default has safe_mode: true (XSS protection enabled)
         'default' => [
             'safe_mode' => true,
+            'symbols' => [],
+            'source_lines' => false,
         ],
 
         // For trusted content (admin, CMS)
@@ -93,6 +95,12 @@ return [
     ],
 ];
 ```
+
+`symbols` maps `:name:` shortcodes to trusted raw HTML. Symbol values are
+inserted without escaping, so never populate this option from user input.
+Set `source_lines` to `true` to add 1-based `data-source-line` attributes to
+rendered blocks for editor preview scroll-sync. Both options are configured per
+converter profile.
 
 ### Multiple Converter Profiles
 
@@ -264,4 +272,3 @@ the spec with its conformance corpus, three byte-identical reference
 implementations (JS, PHP, Rust), editor plugins, and framework integrations.
 See [awesome-carve](https://github.com/markup-carve/awesome-carve) for a curated
 list of everything Carve.
-

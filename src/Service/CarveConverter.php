@@ -19,6 +19,8 @@ class CarveConverter implements CarveConverterInterface
 
     private PlainTextRenderer $textRenderer;
 
+    private string $cacheSignature;
+
     /**
      * @param bool $safeMode
      * @param string $mode Render mode: 'interactive' (default) or 'static'
@@ -27,6 +29,8 @@ class CarveConverter implements CarveConverterInterface
      * @param bool $xhtml
      * @param \Illuminate\Contracts\Cache\Repository|null $cache
      * @param array<\MarkupCarve\Carve\Extension\ExtensionInterface> $extensions
+     * @param array<string, string> $symbols Trusted, unescaped HTML replacements for `:name:` symbols
+     * @param bool $sourceLines
      */
     public function __construct(
         bool $safeMode = true,
@@ -35,24 +39,43 @@ class CarveConverter implements CarveConverterInterface
         bool $xhtml = false,
         private ?CacheRepository $cache = null,
         array $extensions = [],
+        array $symbols = [],
+        bool $sourceLines = false,
     ) {
         $this->converter = new BaseCarveConverter(
             xhtml: $xhtml,
             safeMode: $safeMode,
             mode: $mode,
             softBreakMode: $softBreakMode !== null ? SoftBreakMode::from($softBreakMode) : null,
+            symbols: $symbols,
+            sourceLines: $sourceLines,
         );
         $this->textRenderer = new PlainTextRenderer();
 
         foreach ($extensions as $extension) {
             $this->converter->addExtension($extension);
         }
+
+        // The cache is a shared store, so the key has to identify the converter
+        // as well as the source. Two named profiles rendering the same string -
+        // say a safe one for comments and an unsafe one for admin content -
+        // would otherwise collide, and whichever rendered first would serve the
+        // other its HTML.
+        $this->cacheSignature = hash('xxh3', serialize([
+            $safeMode,
+            $mode,
+            $softBreakMode,
+            $xhtml,
+            $symbols,
+            $sourceLines,
+            array_map(static fn (object $extension): string => $extension::class, $extensions),
+        ]));
     }
 
     public function toHtml(string $carve): string
     {
         if ($this->cache !== null) {
-            $cacheKey = 'laravel_carve_html_' . hash('xxh3', $carve);
+            $cacheKey = 'laravel_carve_html_' . $this->cacheSignature . '_' . hash('xxh3', $carve);
 
             /** @var string|null $cached */
             $cached = $this->cache->get($cacheKey);

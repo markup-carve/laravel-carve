@@ -115,12 +115,23 @@ class LaravelCarveServiceProvider extends ServiceProvider
         }
 
         $softBreakMode = $config['soft_break_mode'] ?? null;
+        $symbols = [];
+        $symbolConfig = $config['symbols'] ?? [];
+        if (is_array($symbolConfig)) {
+            foreach ($symbolConfig as $name => $value) {
+                if (is_string($name) && is_string($value)) {
+                    $symbols[$name] = $value;
+                }
+            }
+        }
 
         return new CarveConverter(
             safeMode: (bool)($config['safe_mode'] ?? true),
             mode: is_string($config['mode'] ?? null) ? $config['mode'] : 'interactive',
             softBreakMode: is_string($softBreakMode) ? $softBreakMode : null,
             xhtml: (bool)($config['xhtml'] ?? false),
+            symbols: $symbols,
+            sourceLines: (bool)($config['source_lines'] ?? false),
             cache: $cache,
             extensions: $extensions,
         );
