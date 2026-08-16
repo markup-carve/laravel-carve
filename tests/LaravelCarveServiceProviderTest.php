@@ -64,6 +64,34 @@ class LaravelCarveServiceProviderTest extends TestCase
         $this->assertTrue($config->get('carve.converters.default.safe_mode'));
     }
 
+    public function testDefaultConfigHasSymbolsAndSourceLines(): void
+    {
+        /** @var \Illuminate\Contracts\Config\Repository $config */
+        $config = $this->app()->make(ConfigRepository::class);
+
+        $this->assertSame([], $config->get('carve.converters.default.symbols'));
+        $this->assertFalse($config->get('carve.converters.default.source_lines'));
+    }
+
+    public function testNamedConverterHonorsSymbolsAndSourceLines(): void
+    {
+        /** @var \Illuminate\Contracts\Config\Repository $config */
+        $config = $this->app()->make(ConfigRepository::class);
+        $config->set('carve.converters.preview', [
+            'symbols' => ['mark' => '<span class="mark">M</span>'],
+            'source_lines' => true,
+        ]);
+        $this->app()->forgetInstance(CarveManager::class);
+
+        /** @var \MarkupCarve\LaravelCarve\Service\CarveManager $manager */
+        $manager = $this->app()->make(CarveManager::class);
+        $html = $manager->toHtml(':mark: :unknown:', 'preview');
+
+        $this->assertStringContainsString('<span class="mark">M</span>', $html);
+        $this->assertStringContainsString(':unknown:', $html);
+        $this->assertStringContainsString('data-source-line="1"', $html);
+    }
+
     public function testMultipleConvertersAreRegistered(): void
     {
         /** @var \Illuminate\Contracts\Config\Repository $config */
