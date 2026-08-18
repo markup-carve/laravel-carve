@@ -2,7 +2,27 @@
 
 ## Unreleased
 
+## 0.1.5 - 2026-08-18
+
+### Security
+
+- Require carve-php `^0.1.5`, which probes **every** candidate in a list-valued
+  URL attribute instead of trusting the value's leading scheme.
+  `srcset="safe.png 1x, javascript:alert(1) 2x"` passed the probe on its second
+  entry. Upgrade if you render untrusted Carve or import untrusted HTML.
+
+### Changed
+
+- Carve-php 0.1.5 changes rendered output: a list-table header cell now carries
+  `scope`, and the Markdown target escapes `<` only where it would open markup
+  and leaves a bare ampersand alone. Assertions on that markup may need updating.
+
+### Added
+
 - Add per-converter symbol replacements (`symbols`) and source-line attributes (`source_lines`)
+
+### Fixed
+
 - Fix the render cache serving one converter's HTML to another: the cache key now identifies the converter's settings, not just the source
 
 ## 0.1.4 - 2026-08-10
