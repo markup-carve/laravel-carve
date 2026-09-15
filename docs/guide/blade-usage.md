@@ -10,7 +10,7 @@ Converts Carve markup to HTML. Safe mode is enabled by default, protecting again
 @carve($article->body)
 ```
 
-The directive outputs raw HTML — the surrounding `<?php echo ?>` is emitted for you.
+The directive outputs raw HTML; the surrounding `<?php echo ?>` is emitted for you.
 
 ### `@carveRaw` Directive
 

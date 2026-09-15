@@ -64,7 +64,7 @@ The rule checks:
 
 ### Note on Carve Parsing
 
-Carve is designed to be very forgiving — most input will parse without errors. Unlike strict formats like JSON or YAML, Carve typically produces *some* output even from malformed input.
+Carve is designed to be forgiving: most input parses without errors. Unlike strict formats like JSON or YAML, Carve typically produces *some* output even from malformed input.
 
 The validation is most useful for:
 
