@@ -4,7 +4,7 @@
 [![PHP](https://img.shields.io/packagist/php-v/markup-carve/laravel-carve)](https://packagist.org/packages/markup-carve/laravel-carve)
 [![License](https://img.shields.io/packagist/l/markup-carve/laravel-carve)](LICENSE)
 
-[Carve](https://github.com/markup-carve/carve-php) markup language integration for Laravel — Blade directives, services, validation, and caching.
+[Carve](https://github.com/markup-carve/carve-php) markup language integration for Laravel: Blade directives, services, validation, and caching.
 
 ## Installation
 
