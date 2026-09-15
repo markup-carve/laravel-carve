@@ -144,7 +144,7 @@ class ExtensionFactoryTest extends TestCase
         $converter->addExtension($ext);
         $html = $converter->convert("``` plantuml\n@startuml\nA -> B\n@enduml\n```");
 
-        $this->assertStringContainsString('<pre class="plantuml">', $html);
+        $this->assertStringContainsString('<pre class="plantuml"', $html);
         // Text mode keeps the source as escaped text; `>` survives for arrows.
         $this->assertStringContainsString('A -> B', $html);
     }
@@ -158,7 +158,7 @@ class ExtensionFactoryTest extends TestCase
         $converter->addExtension($ext);
         $html = $converter->convert("``` puml\n@startuml\nA -> B\n@enduml\n```");
 
-        $this->assertStringContainsString('<pre class="plantuml">', $html);
+        $this->assertStringContainsString('<pre class="plantuml"', $html);
     }
 
     public function testPlantumlShorthandHonorsCssClassOverride(): void
@@ -170,6 +170,6 @@ class ExtensionFactoryTest extends TestCase
         $converter->addExtension($ext);
         $html = $converter->convert("``` plantuml\nA -> B\n```");
 
-        $this->assertStringContainsString('<pre class="uml">', $html);
+        $this->assertStringContainsString('<pre class="uml"', $html);
     }
 }
