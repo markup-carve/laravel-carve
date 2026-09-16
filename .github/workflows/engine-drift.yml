@@ -33,11 +33,14 @@ name: Engine drift
 # something outside the repo teaches people to ignore the job.
 #
 # It DOES fail when the range resolves to nothing, when the installed engine
-# cannot be loaded, or when the corpus is not really there - each of which means
-# a real thing is broken rather than merely old. The last guard matters more
-# than it looks: without it an empty corpus directory reports zero divergences
-# and passes, which is the exact shape of check that let the stale engine
-# through in the first place.
+# cannot be loaded, when the corpus is not really there, or when this repo's own
+# tests fail against the engine the range resolves to today - each of which
+# means a real thing is broken rather than merely old. The test run is what a
+# new install gets: CI only runs on a push, so without it a carve-php release
+# can break the package for weeks unseen (laravel-carve#21). The corpus guard
+# matters more than it looks: without it an empty corpus directory reports zero
+# divergences and passes, which is the exact shape of check that let the stale
+# engine through in the first place.
 
 on:
   schedule:
@@ -240,3 +243,6 @@ jobs:
               fwrite(STDERR, "::warning::the engine this repo installs renders {$wrong} of {$documents} corpus documents differently from carve main ({$threw} of them by throwing). That is the published engine trailing the language - carve#608's PHP twin - and only a carve-php release can close it.\n");
           }
           PHP
+
+      - name: Run the tests against the freshly resolved engine
+        run: vendor/bin/phpunit
