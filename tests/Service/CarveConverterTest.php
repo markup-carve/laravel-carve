@@ -6,12 +6,79 @@ namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
+use InvalidArgumentException;
 use MarkupCarve\Carve\Node\Document;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 class CarveConverterTest extends TestCase
 {
+    public function testFileIncludesAreContainedReportedAndLoggedSafely(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root . '/chapters', 0777, true);
+        file_put_contents($root . '/main.crv', "{{ chapters/one.crv }}\n");
+        file_put_contents($root . '/chapters/one.crv', "Included.\n");
+        try {
+            $result = (new CarveConverter(includeRoot: $root, logger: new NullLogger()))
+                ->toHtmlFileWithReport($root . '/main.crv');
+            self::assertStringContainsString('Included.', $result['value']);
+            self::assertSame([['path' => 'chapters/one.crv', 'resolved' => true]], $result['dependencies']);
+        } finally {
+            unlink($root . '/chapters/one.crv');
+            unlink($root . '/main.crv');
+            rmdir($root . '/chapters');
+            rmdir($root);
+        }
+    }
+
+    public function testFileCacheChangesWhenIncludedFileChanges(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        file_put_contents($root . '/main.crv', "{{ child.crv }}\n");
+        file_put_contents($root . '/child.crv', "FIRST\n");
+        $converter = new CarveConverter(cache: new Repository(new ArrayStore()), includeRoot: $root);
+        try {
+            self::assertStringContainsString('FIRST', $converter->toHtmlFile($root . '/main.crv'));
+            file_put_contents($root . '/child.crv', "SECOND\n");
+            self::assertStringContainsString('SECOND', $converter->toHtmlFile($root . '/main.crv'));
+        } finally {
+            unlink($root . '/child.crv');
+            unlink($root . '/main.crv');
+            rmdir($root);
+        }
+    }
+
+    public function testTraversalAndSymlinkEscapeStayLiteral(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        $outside = tempnam(sys_get_temp_dir(), 'laravel-carve-secret-');
+        mkdir($root);
+        file_put_contents($outside, "SECRET\n");
+        symlink($outside, $root . '/linked.crv');
+        file_put_contents($root . '/main.crv', '{{ ../' . basename($outside) . " }}\n\n{{ linked.crv }}\n");
+        try {
+            $result = (new CarveConverter(includeRoot: $root))->toHtmlFileWithReport($root . '/main.crv');
+            self::assertStringNotContainsString('SECRET', $result['value']);
+            self::assertCount(2, $result['dependencies']);
+            self::assertSame([false, false], array_column($result['dependencies'], 'resolved'));
+        } finally {
+            unlink($root . '/linked.crv');
+            unlink($root . '/main.crv');
+            unlink($outside);
+            rmdir($root);
+        }
+    }
+
+    public function testStringRenderLeavesIncludesLiteralAndRelativeRootIsRejected(): void
+    {
+        self::assertStringContainsString('{{ child.crv }}', (new CarveConverter())->toHtml('{{ child.crv }}'));
+        $this->expectException(InvalidArgumentException::class);
+        new CarveConverter(includeRoot: 'content');
+    }
+
     public function testToHtml(): void
     {
         $converter = new CarveConverter();

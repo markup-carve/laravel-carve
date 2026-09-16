@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 return [
 
+    // Absolute trusted root for explicit file-backed include rendering.
+    // Null keeps all include directives literal.
+    'include_root' => null,
+
     /*
     |--------------------------------------------------------------------------
     | Converter Profiles
