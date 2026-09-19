@@ -124,10 +124,15 @@ the file containing each directive. Traversal and symlink escapes are refused.
 Warnings sent to Laravel's logger omit resolver details and replace outside
 paths.
 
-When package caching is enabled, the file-render cache key includes the source
-and current dependency file states. Editing an included file therefore cannot
-serve the parent page's stale HTML. Attempted and missing targets remain in the
-report so application-level caches can invalidate them when they appear.
+`include_root` has to be an absolute path. A relative one is refused rather
+than resolved against the working directory, which is arbitrary with respect to
+the document, so a misconfigured root raises at boot instead of widening
+silently.
+
+When package caching is enabled, a cached file render is served only while
+every recorded dependency still hashes the same, so editing an included file
+cannot serve the parent page's stale HTML. Missing targets are recorded too:
+creating one is what makes its directive start working.
 
 ### Multiple Converter Profiles
 

@@ -51,7 +51,7 @@ class CarveConverterTest extends TestCase
         }
     }
 
-    public function testTraversalAndSymlinkEscapeStayLiteral(): void
+    public function testTraversalAndSymlinkEscapeStayLiteralAndReportNoPath(): void
     {
         $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
         $outside = tempnam(sys_get_temp_dir(), 'laravel-carve-secret-');
@@ -62,8 +62,26 @@ class CarveConverterTest extends TestCase
         try {
             $result = (new CarveConverter(includeRoot: $root))->toHtmlFileWithReport($root . '/main.crv');
             self::assertStringNotContainsString('SECRET', $result['value']);
-            self::assertCount(2, $result['dependencies']);
-            self::assertSame([false, false], array_column($result['dependencies'], 'resolved'));
+            // The traversal names a path outside the root and is masked; the
+            // symlink names one inside it, so its own spelling says which
+            // directive was refused.
+            self::assertSame(
+                [
+                    ['path' => CarveConverter::OUTSIDE_ROOT, 'resolved' => false],
+                    ['path' => 'linked.crv', 'resolved' => false],
+                ],
+                $result['dependencies'],
+            );
+            self::assertCount(2, $result['warnings']);
+            foreach ($result['warnings'] as $warning) {
+                self::assertSame('include-unresolved', $warning['rule']);
+                self::assertSame(['rule', 'message', 'file', 'line', 'column'], array_keys($warning));
+                self::assertSame('main.crv', $warning['file']);
+                // The resolver's own message embeds the canonical root; it
+                // rides the engine's `detail` channel and is never reported.
+                self::assertStringNotContainsString($root, serialize($warning));
+                self::assertStringNotContainsString($outside, serialize($warning));
+            }
         } finally {
             unlink($root . '/linked.crv');
             unlink($root . '/main.crv');
@@ -72,11 +90,94 @@ class CarveConverterTest extends TestCase
         }
     }
 
+    public function testAnAbsoluteIncludePathIsRefusedAndMasked(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        $outside = tempnam(sys_get_temp_dir(), 'laravel-carve-secret-');
+        mkdir($root);
+        file_put_contents($outside, "SECRET\n");
+        file_put_contents($root . '/main.crv', '{{ ' . $outside . " }}\n");
+        try {
+            $result = (new CarveConverter(includeRoot: $root))->toHtmlFileWithReport($root . '/main.crv');
+            self::assertStringNotContainsString('SECRET', $result['value']);
+            self::assertSame([['path' => CarveConverter::OUTSIDE_ROOT, 'resolved' => false]], $result['dependencies']);
+        } finally {
+            unlink($root . '/main.crv');
+            unlink($outside);
+            rmdir($root);
+        }
+    }
+
+    public function testANestedRelativeIncludeResolvesAgainstItsOwnParent(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root . '/chapters/parts', 0777, true);
+        file_put_contents($root . '/chapters/main.crv', "{{ one.crv }}\n");
+        file_put_contents($root . '/chapters/one.crv', "{{ parts/deep.crv }}\n");
+        file_put_contents($root . '/chapters/parts/deep.crv', "DEEP\n");
+        try {
+            $result = (new CarveConverter(includeRoot: $root))->toHtmlFileWithReport($root . '/chapters/main.crv');
+            self::assertStringContainsString('DEEP', $result['value']);
+            self::assertSame(
+                [
+                    ['path' => 'chapters/one.crv', 'resolved' => true],
+                    ['path' => 'chapters/parts/deep.crv', 'resolved' => true],
+                ],
+                $result['dependencies'],
+            );
+        } finally {
+            unlink($root . '/chapters/parts/deep.crv');
+            unlink($root . '/chapters/one.crv');
+            unlink($root . '/chapters/main.crv');
+            rmdir($root . '/chapters/parts');
+            rmdir($root . '/chapters');
+            rmdir($root);
+        }
+    }
+
+    public function testAnUnsetRootLeavesAFileRenderLiteral(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        file_put_contents($root . '/main.crv', "{{ child.crv }}\n");
+        file_put_contents($root . '/child.crv', "SECRET\n");
+        try {
+            $result = (new CarveConverter())->toHtmlFileWithReport($root . '/main.crv');
+            self::assertStringNotContainsString('SECRET', $result['value']);
+            self::assertStringContainsString('{{ child.crv }}', $result['value']);
+            self::assertSame([], $result['dependencies']);
+        } finally {
+            unlink($root . '/child.crv');
+            unlink($root . '/main.crv');
+            rmdir($root);
+        }
+    }
+
+    public function testCreatingAMissingIncludeTargetInvalidatesTheCachedRender(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        file_put_contents($root . '/main.crv', "{{ later.crv }}\n");
+        $converter = new CarveConverter(cache: new Repository(new ArrayStore()), includeRoot: $root);
+        try {
+            self::assertStringContainsString('{{ later.crv }}', $converter->toHtmlFile($root . '/main.crv'));
+            file_put_contents($root . '/later.crv', "ARRIVED\n");
+            self::assertStringContainsString('ARRIVED', $converter->toHtmlFile($root . '/main.crv'));
+        } finally {
+            unlink($root . '/later.crv');
+            unlink($root . '/main.crv');
+            rmdir($root);
+        }
+    }
+
     public function testStringRenderLeavesIncludesLiteralAndRelativeRootIsRejected(): void
     {
         self::assertStringContainsString('{{ child.crv }}', (new CarveConverter())->toHtml('{{ child.crv }}'));
+        // `src` exists relative to the working directory, so a root that gets
+        // canonicalized first would be accepted here.
+        self::assertDirectoryExists(getcwd() . '/src');
         $this->expectException(InvalidArgumentException::class);
-        new CarveConverter(includeRoot: 'content');
+        new CarveConverter(includeRoot: 'src');
     }
 
     public function testToHtml(): void

@@ -16,14 +16,29 @@ use MarkupCarve\Carve\Renderer\SoftBreakMode;
 use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
 use MarkupCarve\Carve\Transform\IncludeExpander;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class CarveConverter implements CarveConverterInterface
 {
+    /**
+     * Stand-in for an identity that names anything but a path inside the root.
+     *
+     * @var string
+     */
+    public const OUTSIDE_ROOT = '[outside-root]';
+
     private BaseCarveConverter $converter;
 
     private PlainTextRenderer $textRenderer;
 
     private string $cacheSignature;
+
+    /**
+     * Canonical containment root, or null while inclusion is disabled.
+     */
+    private ?string $includeRoot = null;
+
+    private ?FilesystemIncludeResolver $includeResolver = null;
 
     /**
      * @param bool $safeMode
@@ -49,14 +64,19 @@ class CarveConverter implements CarveConverterInterface
         array $extensions = [],
         array $symbols = [],
         bool $sourceLines = false,
-        private ?string $includeRoot = null,
+        ?string $includeRoot = null,
         private ?LoggerInterface $logger = null,
     ) {
-        if (
-            $this->includeRoot !== null && !str_starts_with($this->includeRoot, '/')
-            && preg_match('/^[A-Za-z]:[\\\\\/]/', $this->includeRoot) !== 1
-        ) {
-            throw new InvalidArgumentException('carve.include_root must be an absolute path.');
+        if ($includeRoot !== null) {
+            // The resolver owns the rule that a configured root must be
+            // absolute, so a value it refuses never reaches a render. Naming
+            // the config key here is the only thing added.
+            try {
+                $this->includeResolver = new FilesystemIncludeResolver($includeRoot);
+            } catch (RuntimeException $exception) {
+                throw new InvalidArgumentException('carve.include_root: ' . $exception->getMessage(), 0, $exception);
+            }
+            $this->includeRoot = rtrim((string)realpath($includeRoot), DIRECTORY_SEPARATOR);
         }
         $this->converter = new BaseCarveConverter(
             xhtml: $xhtml,
@@ -130,21 +150,30 @@ class CarveConverter implements CarveConverterInterface
         if ($source === false) {
             throw new InvalidArgumentException(sprintf('Carve source is not readable: %s', $path));
         }
-        if ($this->includeRoot === null) {
+        $root = $this->includeRoot;
+        if ($root === null || $this->includeResolver === null) {
             return ['value' => $this->toHtml($source), 'warnings' => [], 'dependencies' => [], 'suppressedWarnings' => 0];
         }
 
-        $root = realpath($this->includeRoot);
-        if ($root === false || !is_dir($root)) {
-            throw new InvalidArgumentException('carve.include_root is not a readable directory.');
-        }
-        $root = rtrim($root, DIRECTORY_SEPARATOR);
         if ($sourcePath !== $root && !str_starts_with($sourcePath, $root . DIRECTORY_SEPARATOR)) {
             throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
         }
 
+        $cache = $this->cache;
+        $cacheKey = null;
+        if ($cache !== null) {
+            $cacheKey = 'laravel_carve_file_' . $this->cacheSignature . '_' . hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
+            /** @var array{value: string, warnings: list<array<string, mixed>>, dependencies: list<array{path: string, resolved: bool}>, suppressedWarnings: int, states: array<string, string|null>}|null $cached */
+            $cached = $cache->get($cacheKey);
+            if ($cached !== null && $cached['states'] === $this->dependencyStates(array_keys($cached['states']), $root)) {
+                unset($cached['states']);
+
+                return $cached;
+            }
+        }
+
         $expander = new IncludeExpander(
-            resolver: new FilesystemIncludeResolver($root),
+            resolver: $this->includeResolver,
             currentPath: $sourcePath,
             source: $source,
         );
@@ -152,53 +181,77 @@ class CarveConverter implements CarveConverterInterface
         $warnings = array_map(fn ($warning): array => [
             'rule' => $warning->getRule(),
             'message' => $warning->getMessage(),
-            'file' => $this->relativeIdentity($warning->getFile(), $root),
+            'file' => $this->containedIdentity($warning->getFile(), $root),
             'line' => $warning->getLine(),
             'column' => $warning->getColumn(),
         ], $expander->getWarnings());
+        $targets = array_map(static fn ($dependency): string => $dependency->getTarget(), $expander->getDependencies());
         $dependencies = array_map(fn ($dependency): array => [
-            'path' => $this->relativeIdentity($dependency->getTarget(), $root) ?? '[unknown]',
+            'path' => $this->containedIdentity($dependency->getTarget(), $root) ?? self::OUTSIDE_ROOT,
             'resolved' => $dependency->isResolved(),
         ], $expander->getDependencies());
         foreach ($warnings as $warning) {
             $this->logger?->warning('Carve include warning: {message}', $warning);
         }
 
-        $html = $this->converter->render($document);
-        if ($this->cache !== null) {
-            $states = array_map(function (array $dependency) use ($root): array {
-                $candidate = $root . DIRECTORY_SEPARATOR . $dependency['path'];
-
-                return [$dependency['path'], is_file($candidate) ? hash_file('xxh3', $candidate) : null];
-            }, $dependencies);
-            $key = 'laravel_carve_file_' . $this->cacheSignature . '_' . hash('xxh3', serialize([$sourcePath, hash('xxh3', $source), $states]));
-            /** @var string|null $cached */
-            $cached = $this->cache->get($key);
-            if ($cached !== null) {
-                $html = $cached;
-            } else {
-                $this->cache->forever($key, $html);
-            }
+        $result = [
+            'value' => $this->converter->render($document),
+            'warnings' => $warnings,
+            'dependencies' => $dependencies,
+            'suppressedWarnings' => $expander->getSuppressedWarnings(),
+        ];
+        if ($cache !== null) {
+            $cache->forever($cacheKey, $result + ['states' => $this->dependencyStates($targets, $root)]);
         }
 
-        return ['value' => $html, 'warnings' => $warnings, 'dependencies' => $dependencies, 'suppressedWarnings' => $expander->getSuppressedWarnings()];
+        return $result;
     }
 
-    private function relativeIdentity(?string $identity, string $root): ?string
+    /**
+     * Content hash per include target, or null where the target is absent or
+     * outside the root. A missing target keeps an entry on purpose: creating
+     * the file is what makes the directive start working, so it has to
+     * invalidate the entry.
+     *
+     * @param array<string> $targets
+     * @param string $root
+     *
+     * @return array<string, string|null>
+     */
+    private function dependencyStates(array $targets, string $root): array
+    {
+        $states = [];
+        foreach ($targets as $target) {
+            $contained = $this->containedIdentity($target, $root);
+            $candidate = $contained === null || $contained === self::OUTSIDE_ROOT
+                ? null
+                : $root . DIRECTORY_SEPARATOR . $contained;
+            $states[$target] = $candidate !== null && is_file($candidate)
+                ? (hash_file('xxh3', $candidate) ?: null)
+                : null;
+        }
+
+        return $states;
+    }
+
+    /**
+     * The identity as a path relative to the root, or a fixed marker when it
+     * names anything else. A resolver message may embed an absolute path, and
+     * a denial keeps the directive's own spelling, so neither is reported.
+     */
+    private function containedIdentity(?string $identity, string $root): ?string
     {
         if ($identity === null) {
             return null;
         }
-        if (!str_starts_with($identity, '/') && preg_match('/^[A-Za-z]:[\\\\\/]/', $identity) !== 1) {
-            $identity = str_replace('\\', '/', $identity);
-
-            return $identity === '..' || str_starts_with($identity, '../') ? '[outside-root]' : $identity;
-        }
         if (str_starts_with($identity, $root . DIRECTORY_SEPARATOR)) {
-            return str_replace(DIRECTORY_SEPARATOR, '/', substr($identity, strlen($root) + 1));
+            $identity = substr($identity, strlen($root) + 1);
+        } elseif (str_starts_with($identity, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $identity) === 1) {
+            return self::OUTSIDE_ROOT;
         }
+        $identity = str_replace('\\', '/', $identity);
 
-        return '[outside-root]';
+        return in_array('..', explode('/', $identity), true) ? self::OUTSIDE_ROOT : $identity;
     }
 
     public function toMarkdown(string $carve): string
