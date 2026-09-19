@@ -10,6 +10,8 @@ use MarkupCarve\LaravelCarve\Service\CarveManager;
 /**
  * @see \MarkupCarve\LaravelCarve\Service\CarveManager
  * @method static string toHtml(string $carve, string $converter = 'default')
+ * @method static string toHtmlFile(string $path, string $converter = 'default')
+ * @method static array<string, mixed> toHtmlFileWithReport(string $path, string $converter = 'default')
  * @method static string toHtmlRaw(string $carve)
  * @method static string toText(string $carve, string $converter = 'default')
  * @method static string toMarkdown(string $carve, string $converter = 'default')

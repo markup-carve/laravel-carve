@@ -14,6 +14,7 @@ use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveConverterInterface;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
+use Psr\Log\LoggerInterface;
 
 class LaravelCarveServiceProvider extends ServiceProvider
 {
@@ -26,11 +27,13 @@ class LaravelCarveServiceProvider extends ServiceProvider
         $this->app->singleton(CarveManager::class, function (Container $app): CarveManager {
             /** @var \Illuminate\Contracts\Config\Repository $configRepository */
             $configRepository = $app->make(ConfigRepository::class);
-            /** @var array{converters?: array<string, array<string, mixed>>, cache?: array{enabled?: bool, store?: string|null}} $config */
+            /** @var array{include_root?: string|null, converters?: array<string, array<string, mixed>>, cache?: array{enabled?: bool, store?: string|null}} $config */
             $config = $configRepository->get('carve', []);
 
             /** @var \MarkupCarve\LaravelCarve\Service\ExtensionFactory $factory */
             $factory = $app->make(ExtensionFactory::class);
+            /** @var \Psr\Log\LoggerInterface $logger */
+            $logger = $app->make(LoggerInterface::class);
 
             $cache = null;
             if (!empty($config['cache']['enabled'])) {
@@ -41,11 +44,11 @@ class LaravelCarveServiceProvider extends ServiceProvider
 
             $converters = [];
             foreach ($config['converters'] ?? [] as $name => $converterConfig) {
-                $converters[$name] = $this->buildConverter($converterConfig, $cache, $factory);
+                $converters[$name] = $this->buildConverter($converterConfig, $cache, $factory, $config['include_root'] ?? null, $logger);
             }
 
             if ($converters === []) {
-                $converters['default'] = new CarveConverter(cache: $cache);
+                $converters['default'] = new CarveConverter(cache: $cache, includeRoot: $config['include_root'] ?? null, logger: $logger);
             }
 
             return new CarveManager($converters);
@@ -89,11 +92,15 @@ class LaravelCarveServiceProvider extends ServiceProvider
      * @param array<string, mixed> $config
      * @param \Illuminate\Contracts\Cache\Repository|null $cache
      * @param \MarkupCarve\LaravelCarve\Service\ExtensionFactory $factory
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param string|null $includeRoot
      */
     private function buildConverter(
         array $config,
         ?CacheRepository $cache,
         ExtensionFactory $factory,
+        ?string $includeRoot,
+        LoggerInterface $logger,
     ): CarveConverter {
         $extensions = [];
         $extConfigs = $config['extensions'] ?? [];
@@ -134,6 +141,8 @@ class LaravelCarveServiceProvider extends ServiceProvider
             sourceLines: (bool)($config['source_lines'] ?? false),
             cache: $cache,
             extensions: $extensions,
+            includeRoot: $includeRoot,
+            logger: $logger,
         );
     }
 }

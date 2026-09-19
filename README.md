@@ -76,6 +76,7 @@ class ArticleController
 ```php
 // config/carve.php
 return [
+    'include_root' => null,
     'converters' => [
         // Default has safe_mode: true (XSS protection enabled)
         'default' => [
@@ -101,6 +102,37 @@ inserted without escaping, so never populate this option from user input.
 Set `source_lines` to `true` to add 1-based `data-source-line` attributes to
 rendered blocks for editor preview scroll-sync. Both options are configured per
 converter profile.
+
+### File includes
+
+Blade directives and string methods never read files. To enable includes for
+trusted file-backed content, configure an absolute containment root and call
+the explicit file API:
+
+```php
+// config/carve.php
+'include_root' => '/srv/app/content',
+
+$report = Carve::toHtmlFileWithReport('/srv/app/content/book/main.crv');
+$html = $report['value'];
+$warnings = $report['warnings'];
+$dependencies = $report['dependencies'];
+```
+
+`Carve::toHtmlFile()` returns only the HTML. Nested paths resolve relative to
+the file containing each directive. Traversal and symlink escapes are refused.
+Warnings sent to Laravel's logger omit resolver details and replace outside
+paths.
+
+`include_root` has to be an absolute path. A relative one is refused rather
+than resolved against the working directory, which is arbitrary with respect to
+the document, so a misconfigured root raises at boot instead of widening
+silently.
+
+When package caching is enabled, a cached file render is served only while
+every recorded dependency still hashes the same, so editing an included file
+cannot serve the parent page's stale HTML. Missing targets are recorded too:
+creating one is what makes its directive start working.
 
 ### Multiple Converter Profiles
 
