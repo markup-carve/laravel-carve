@@ -20,6 +20,13 @@ interface CarveConverterInterface
     public function toHtml(string $carve): string;
 
     /**
+     * @return array{value: string, warnings: list<array<string, mixed>>, dependencies: list<array{path: string, resolved: bool}>, suppressedWarnings: int}
+     */
+    public function toHtmlFileWithReport(string $path): array;
+
+    public function toHtmlFile(string $path): string;
+
+    /**
      * Convert Carve markup to plain text.
      */
     public function toText(string $carve): string;

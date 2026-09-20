@@ -25,6 +25,19 @@ class CarveManager
         return $this->getConverter($converter)->toHtml($carve);
     }
 
+    public function toHtmlFile(string $path, string $converter = 'default'): string
+    {
+        return $this->getConverter($converter)->toHtmlFile($path);
+    }
+
+    /**
+     * @return array{value: string, warnings: list<array<string, mixed>>, dependencies: list<array{path: string, resolved: bool}>, suppressedWarnings: int}
+     */
+    public function toHtmlFileWithReport(string $path, string $converter = 'default'): array
+    {
+        return $this->getConverter($converter)->toHtmlFileWithReport($path);
+    }
+
     /**
      * Convert Carve markup to HTML without safe mode (trusted content only).
      */
