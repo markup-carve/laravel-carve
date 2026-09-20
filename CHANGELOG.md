@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.1.6 - 2026-09-20
+
+### Added
+
+- Add opt-in file-backed include rendering: an absolute `include_root` plus
+  `Carve::toHtmlFile()` and `Carve::toHtmlFileWithReport()`. Blade directives and
+  the string methods still never read files. A cached file render is served only
+  while every recorded dependency still hashes the same, and logged warnings omit
+  resolver details (#25)
+
+### Changed
+
+- Require carve-php `^0.1.9`, the first tag carrying the include pass the file
+  API runs on (#25)
+
 ## 0.1.5 - 2026-08-18
 
 ### Security
