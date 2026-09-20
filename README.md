@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/markup-carve/laravel-carve/actions/workflows/ci.yml/badge.svg)](https://github.com/markup-carve/laravel-carve/actions/workflows/ci.yml)
 [![PHP](https://img.shields.io/packagist/php-v/markup-carve/laravel-carve)](https://packagist.org/packages/markup-carve/laravel-carve)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%209-brightgreen.svg)](https://phpstan.org/)
 [![License](https://img.shields.io/packagist/l/markup-carve/laravel-carve)](LICENSE)
 
 [Carve](https://github.com/markup-carve/carve-php) markup language integration for Laravel: Blade directives, services, validation, and caching.
