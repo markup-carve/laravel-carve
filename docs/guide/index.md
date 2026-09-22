@@ -4,12 +4,11 @@ Carve markup language integration for Laravel applications.
 
 ## What is Carve?
 
-[Carve](https://github.com/markup-carve/carve) is a post-Markdown lightweight markup language building on the foundations of [Djot](https://github.com/jgm/djot), John MacFarlane's post-Markdown project. It addresses Markdown's complexity issues:
+[Carve](https://github.com/markup-carve/carve) is a lightweight markup language for structured documents, with clear, consistent syntax:
 
-- **Cleaner syntax** — more consistent rules, fewer edge cases
-- **More features** — footnotes, definition lists, task lists, math, highlights, and more
-- **Easier to parse** — simpler specification, faster implementations
-- **Better extensibility** — designed for customization
+- **Clear syntax** - consistent rules with fewer edge cases
+- **Document features** - footnotes, definition lists, task lists, math, highlights, and more
+- **Extensible design** - built for customization
 
 ## Features
 

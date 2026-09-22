@@ -294,7 +294,7 @@ A full runnable demo app lives at [laravel-carve-demo](https://github.com/markup
 
 ## What is Carve?
 
-[Carve](https://github.com/markup-carve/carve) is a post-Markdown lightweight markup language. It builds on the foundations of [Djot](https://github.com/jgm/djot), John MacFarlane's post-Markdown project, and offers cleaner syntax and more features than Markdown while being easier to parse.
+[Carve](https://github.com/markup-carve/carve) is a lightweight markup language for structured documents, with clear, consistent syntax. It supports rich document features such as footnotes, definition lists, task lists, and math.
 
 Learn more about Carve syntax at [github.com/markup-carve/carve](https://github.com/markup-carve/carve).
 
