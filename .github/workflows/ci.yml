@@ -7,10 +7,14 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Jobs carry an explicit timeout-minutes: without one GitHub applies a
+# 360-minute default, long enough for a stalled job to go unnoticed.
+
 jobs:
   tests:
     name: Tests (PHP ${{ matrix.php }}, Laravel ${{ matrix.laravel }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +73,7 @@ jobs:
   validation:
     name: Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
