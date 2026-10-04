@@ -141,6 +141,6 @@ converter, including customization through `extend()`, to prevent stale output.
 
 The value object, cast, component, view engine and commands adapt MIT-licensed
 work from [Jefferson Gonçalves's Laravel integration](https://github.com/jeffersongoncalves/laravel-carve).
-The license notice is retained in `LICENSES/`.
+The license notice is retained in `LICENSE`.
 
 :::

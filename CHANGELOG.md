@@ -37,7 +37,7 @@
 ### Credits
 
 - Adapt Laravel integrations from Jefferson Gonçalves's MIT-licensed package.
-  Retain its notice in `LICENSES/`.
+  Retain its notice in `LICENSE`.
 
 ## 0.1.6 - 2026-09-20
 
