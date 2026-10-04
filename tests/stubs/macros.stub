@@ -1,0 +1,12 @@
+<?php
+namespace Illuminate\Support;
+/**
+ * @method static string carve(string $source, ?string $converter = null)
+ * @method static string carveText(string $source, ?string $converter = null)
+ */
+class Str {}
+/**
+ * @method Stringable carve(?string $converter = null)
+ * @method Stringable carveText(?string $converter = null)
+ */
+class Stringable {}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
+use InvalidArgumentException;
 use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\Extension\AutolinkExtension;
 use MarkupCarve\Carve\Extension\ExternalLinksExtension;
@@ -45,6 +46,15 @@ class ExtensionFactoryTest extends TestCase
     public function testUnknownTypeReturnsNull(): void
     {
         $this->assertNull($this->factory->create(['type' => 'nope']));
+    }
+
+    public function testCustomClassesInstancesAndWrongOptions(): void
+    {
+        $instance = new AutolinkExtension();
+        self::assertSame($instance, $this->factory->create($instance));
+        self::assertInstanceOf(AutolinkExtension::class, $this->factory->create(AutolinkExtension::class));
+        $this->expectException(InvalidArgumentException::class);
+        $this->factory->create(['type' => 'autolink', 'misspelled_option' => true]);
     }
 
     public function testEveryTypeConstantCreatesExtension(): void

@@ -1,6 +1,6 @@
 {
     "name": "markup-carve/laravel-carve",
-    "description": "Laravel integration for markup-carve/carve-php — Blade directives, services, validation, and caching",
+    "description": "Laravel integration for Carve: rendering, validation, views, casts, imports, commands and caching",
     "license": "MIT",
     "type": "library",
     "keywords": [
@@ -23,11 +23,14 @@
         "markup-carve/carve-php": "^0.1.9",
         "illuminate/contracts": "^11.0 || ^12.0 || ^13.0",
         "illuminate/support": "^11.0 || ^12.0 || ^13.0",
-        "illuminate/view": "^11.0 || ^12.0 || ^13.0"
+        "illuminate/view": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/console": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/database": "^11.0 || ^12.0 || ^13.0",
+        "symfony/finder": "^7.0 || ^8.0"
     },
     "require-dev": {
         "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
-    "php-collective/code-sniffer": "^0.6.0",
+        "php-collective/code-sniffer": "^0.6.0",
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^11.5 || ^12.5 || ^13.0"
     },
@@ -64,5 +67,8 @@
         "stan": "phpstan analyse",
         "stan-setup": "composer require --dev phpstan/phpstan",
         "test": "phpunit"
+    },
+    "suggest": {
+        "symfony/yaml": "Parse YAML frontmatter with RenderedCarve::meta()."
     }
 }

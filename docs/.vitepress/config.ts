@@ -53,6 +53,7 @@ export default defineConfig({
             { text: 'Blade Directives', link: '/guide/blade-usage' },
             { text: 'Service Usage', link: '/guide/service-usage' },
             { text: 'Validation', link: '/guide/validation' },
+            { text: 'Authoring in Laravel', link: '/guide/authoring' },
           ],
         },
         {

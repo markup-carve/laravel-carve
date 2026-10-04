@@ -7,16 +7,21 @@ namespace MarkupCarve\LaravelCarve\Service;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use MarkupCarve\Carve\CarveConverter as BaseCarveConverter;
+use MarkupCarve\Carve\Extension\FrontmatterExtension;
+use MarkupCarve\Carve\Extension\TableOfContentsExtension;
 use MarkupCarve\Carve\Node\Document;
 use MarkupCarve\Carve\Renderer\AnsiRenderer;
 use MarkupCarve\Carve\Renderer\MarkdownRenderer;
 use MarkupCarve\Carve\Renderer\PlainTextRenderer;
 use MarkupCarve\Carve\Renderer\RenderMode;
 use MarkupCarve\Carve\Renderer\SoftBreakMode;
+use MarkupCarve\Carve\SafeMode;
 use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
 use MarkupCarve\Carve\Transform\IncludeExpander;
+use MarkupCarve\LaravelCarve\RenderedCarve;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 class CarveConverter implements CarveConverterInterface
 {
@@ -41,7 +46,7 @@ class CarveConverter implements CarveConverterInterface
     private ?FilesystemIncludeResolver $includeResolver = null;
 
     /**
-     * @param bool $safeMode
+     * @param \MarkupCarve\Carve\SafeMode|bool $safeMode
      * @param string $mode Render mode: 'interactive' (default) or 'static'
      *   (graceful degradation for print/email/PDF targets)
      * @param string|null $softBreakMode
@@ -51,12 +56,19 @@ class CarveConverter implements CarveConverterInterface
      * @param array<string, string> $symbols Trusted, unescaped HTML replacements for `:name:` symbols
      * @param bool $sourceLines
      * @param \Psr\Log\LoggerInterface|null $logger
+     * @param string|null $cacheVersion
+     * @param string $cachePrefix
+     * @param int|null $cacheTtl
+     * @param array<string, string> $labels
+     * @param bool|null $smartTypography
+     * @param string|null $onDisallowed
+     * @param string|null $preset
      * @param string|null $includeRoot
      *
      * @throws \InvalidArgumentException
      */
     public function __construct(
-        bool $safeMode = true,
+        SafeMode|bool $safeMode = true,
         string $mode = RenderMode::INTERACTIVE,
         ?string $softBreakMode = null,
         bool $xhtml = false,
@@ -66,6 +78,13 @@ class CarveConverter implements CarveConverterInterface
         bool $sourceLines = false,
         ?string $includeRoot = null,
         private ?LoggerInterface $logger = null,
+        ?string $preset = null,
+        ?string $onDisallowed = null,
+        ?bool $smartTypography = null,
+        array $labels = [],
+        private ?int $cacheTtl = null,
+        private string $cachePrefix = 'laravel_carve',
+        ?string $cacheVersion = null,
     ) {
         if ($includeRoot !== null) {
             // The resolver owns the rule that a configured root must be
@@ -85,6 +104,9 @@ class CarveConverter implements CarveConverterInterface
             softBreakMode: $softBreakMode !== null ? SoftBreakMode::from($softBreakMode) : null,
             symbols: $symbols,
             sourceLines: $sourceLines,
+            profile: RenderPolicy::preset($preset, $onDisallowed),
+            smartTypography: $smartTypography,
+            labels: $labels,
         );
         $this->textRenderer = new PlainTextRenderer();
 
@@ -92,40 +114,72 @@ class CarveConverter implements CarveConverterInterface
             $this->converter->addExtension($extension);
         }
 
-        // The cache is a shared store, so the key has to identify the converter
-        // as well as the source. Two named profiles rendering the same string -
-        // say a safe one for comments and an unsafe one for admin content -
-        // would otherwise collide, and whichever rendered first would serve the
-        // other its HTML.
+        if (!array_filter($extensions, static fn ($extension): bool => $extension instanceof TableOfContentsExtension)) {
+            $this->converter->addExtension(new TableOfContentsExtension());
+        }
+
+        // A signature must include extension options and engine changes. Extensions
+        // containing closures need an explicit application version to enable caching.
+        try {
+            $extensionState = serialize($extensions);
+        } catch (Throwable) {
+            $extensionState = array_map(static fn ($extension): string => $extension::class, $extensions);
+            if ($cacheVersion === null) {
+                $this->cache = null;
+            }
+        }
         $this->cacheSignature = hash('xxh3', serialize([
-            $safeMode,
-            $mode,
-            $softBreakMode,
-            $xhtml,
-            $symbols,
-            $sourceLines,
-            array_map(static fn (object $extension): string => $extension::class, $extensions),
+            BaseCarveConverter::LIB_VERSION, $safeMode, $mode, $softBreakMode, $xhtml,
+            $symbols, $sourceLines, $preset, $onDisallowed, $smartTypography, $labels,
+            $includeRoot, $extensionState, $cacheVersion,
         ]));
     }
 
     public function toHtml(string $carve): string
     {
-        if ($this->cache !== null) {
-            $cacheKey = 'laravel_carve_html_' . $this->cacheSignature . '_' . hash('xxh3', $carve);
+        return $this->render($carve)->html;
+    }
 
-            /** @var string|null $cached */
-            $cached = $this->cache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
+    public function render(string $carve): RenderedCarve
+    {
+        $cacheKey = $this->cachePrefix . '_render_' . $this->cacheSignature . '_' . hash('xxh3', $carve);
+        $cached = $this->cache?->get($cacheKey);
+        if ($cached instanceof RenderedCarve) {
+            return $cached;
+        }
+        $rendered = $this->renderDocument($carve, $this->converter->parse($carve));
+        $this->cache?->put($cacheKey, $rendered, $this->cacheTtl);
+
+        return $rendered;
+    }
+
+    /**
+     * @param string $source
+     * @param \MarkupCarve\Carve\Node\Document $document
+     * @param list<array<string, mixed>> $warnings
+     * @param list<array{path: string, resolved: bool}> $dependencies
+     * @param int $suppressedWarnings
+     */
+    private function renderDocument(
+        string $source,
+        Document $document,
+        array $warnings = [],
+        array $dependencies = [],
+        int $suppressedWarnings = 0,
+    ): RenderedCarve {
+        $html = $this->converter->render($document);
+        $toc = [];
+        $frontmatter = null;
+        foreach ($this->converter->getExtensions() as $extension) {
+            if ($extension instanceof TableOfContentsExtension) {
+                $toc = $extension->getToc();
             }
-
-            $html = $this->converter->convert($carve);
-            $this->cache->forever($cacheKey, $html);
-
-            return $html;
+            if ($extension instanceof FrontmatterExtension && $extension->hasFrontmatter()) {
+                $frontmatter = ['format' => (string)$extension->getFormat(), 'content' => (string)$extension->getContent()];
+            }
         }
 
-        return $this->converter->convert($carve);
+        return new RenderedCarve($source, $html, $toc, $frontmatter, $warnings, $dependencies, $suppressedWarnings);
     }
 
     public function toText(string $carve): string
@@ -137,47 +191,41 @@ class CarveConverter implements CarveConverterInterface
 
     public function toHtmlFile(string $path): string
     {
-        return $this->toHtmlFileWithReport($path)['value'];
+        return $this->renderFile($path)->html;
     }
 
     public function toHtmlFileWithReport(string $path): array
     {
-        $sourcePath = realpath($path);
-        if ($sourcePath === false || !is_file($sourcePath)) {
-            throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
-        }
-        $source = file_get_contents($sourcePath);
-        if ($source === false) {
-            throw new InvalidArgumentException(sprintf('Carve source is not readable: %s', $path));
-        }
+        $rendered = $this->renderFile($path);
+
+        return [
+            'value' => $rendered->html,
+            'warnings' => $rendered->warnings,
+            'dependencies' => $rendered->dependencies,
+            'suppressedWarnings' => $rendered->suppressedWarnings,
+        ];
+    }
+
+    public function renderFile(string $path): RenderedCarve
+    {
+        [$sourcePath, $source] = $this->readFile($path);
         $root = $this->includeRoot;
         if ($root === null || $this->includeResolver === null) {
-            return ['value' => $this->toHtml($source), 'warnings' => [], 'dependencies' => [], 'suppressedWarnings' => 0];
-        }
-
-        if ($sourcePath !== $root && !str_starts_with($sourcePath, $root . DIRECTORY_SEPARATOR)) {
-            throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
+            return $this->render($source);
         }
 
         $cache = $this->cache;
         $cacheKey = null;
         if ($cache !== null) {
-            $cacheKey = 'laravel_carve_file_' . $this->cacheSignature . '_' . hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
-            /** @var array{value: string, warnings: list<array<string, mixed>>, dependencies: list<array{path: string, resolved: bool}>, suppressedWarnings: int, states: array<string, string|null>}|null $cached */
+            $cacheKey = $this->cachePrefix . '_file_' . $this->cacheSignature . '_' . hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
+            /** @var array{rendered: \MarkupCarve\LaravelCarve\RenderedCarve, states: array<string, string|null>}|null $cached */
             $cached = $cache->get($cacheKey);
             if ($cached !== null && $cached['states'] === $this->dependencyStates(array_keys($cached['states']), $root)) {
-                unset($cached['states']);
-
-                return $cached;
+                return $cached['rendered'];
             }
         }
 
-        $expander = new IncludeExpander(
-            resolver: $this->includeResolver,
-            currentPath: $sourcePath,
-            source: $source,
-        );
-        $document = $this->converter->transform($this->converter->parse($source), $expander);
+        [$document, $expander] = $this->expandFile($sourcePath, $source);
         $warnings = array_map(fn ($warning): array => [
             'rule' => $warning->getRule(),
             'message' => $warning->getMessage(),
@@ -194,17 +242,75 @@ class CarveConverter implements CarveConverterInterface
             $this->logger?->warning('Carve include warning: {message}', $warning);
         }
 
-        $result = [
-            'value' => $this->converter->render($document),
-            'warnings' => $warnings,
-            'dependencies' => $dependencies,
-            'suppressedWarnings' => $expander->getSuppressedWarnings(),
-        ];
+        $rendered = $this->renderDocument($source, $document, $warnings, $dependencies, $expander->getSuppressedWarnings());
         if ($cache !== null) {
-            $cache->forever($cacheKey, $result + ['states' => $this->dependencyStates($targets, $root)]);
+            $cache->put($cacheKey, ['rendered' => $rendered, 'states' => $this->dependencyStates($targets, $root)], $this->cacheTtl);
         }
 
-        return $result;
+        return $rendered;
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     *
+     * @return array{string, string}
+     */
+    private function readFile(string $path): array
+    {
+        $realPath = realpath($path);
+        if ($realPath === false || !is_file($realPath)) {
+            throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
+        }
+        $source = file_get_contents($realPath);
+        if ($source === false) {
+            throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
+        }
+        $root = $this->includeRoot;
+        if ($root !== null && !str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)) {
+            throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
+        }
+
+        return [$realPath, $source];
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     *
+     * @return array{\MarkupCarve\Carve\Node\Document, \MarkupCarve\Carve\Transform\IncludeExpander}
+     */
+    private function expandFile(string $path, string $source): array
+    {
+        $resolver = $this->includeResolver;
+        if ($resolver === null) {
+            throw new InvalidArgumentException('Carve include resolution is disabled.');
+        }
+        $document = $this->converter->parse($source);
+        $expander = new IncludeExpander(
+            resolver: $resolver,
+            currentPath: $path,
+            source: $source,
+            extensions: $this->converter->getExtensions(),
+        );
+
+        return [$this->converter->transform($document, $expander), $expander];
+    }
+
+    public function renderFileAs(string $path, string $format): string
+    {
+        if ($format === 'html') {
+            return $this->renderFile($path)->html;
+        }
+        [$realPath, $source] = $this->readFile($path);
+        $document = $this->includeResolver === null
+            ? $this->converter->parse($source)
+            : $this->expandFile($realPath, $source)[0];
+
+        return match ($format) {
+            'text' => $this->textRenderer->render($document),
+            'markdown' => (new MarkdownRenderer())->render($document),
+            'ansi' => (new AnsiRenderer())->render($document),
+            default => throw new InvalidArgumentException('Unknown Carve output format.'),
+        };
     }
 
     /**
@@ -275,6 +381,8 @@ class CarveConverter implements CarveConverterInterface
 
     public function getConverter(): BaseCarveConverter
     {
+        $this->cache = null;
+
         return $this->converter;
     }
 }

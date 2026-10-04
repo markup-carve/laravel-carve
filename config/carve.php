@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 return [
 
+    'default' => 'default',
+
+    'views' => ['enabled' => true, 'converter' => null],
+
     // Absolute trusted root for explicit file-backed include rendering.
     // Null keeps all include directives literal.
     'include_root' => null,
@@ -20,6 +24,9 @@ return [
     */
 
     'converters' => [
+
+        'comment' => ['safe_mode' => 'strict', 'preset' => 'comment'],
+        'trusted' => ['safe_mode' => false],
 
         'default' => [
             // XSS protection — disable only for trusted content
@@ -65,6 +72,8 @@ return [
     'cache' => [
         'enabled' => false,
         'store' => null,
+        'ttl' => null,
+        'prefix' => 'laravel_carve',
     ],
 
 ];

@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+## 0.1.7 - 2026-10-04
+
+### Added
+
+- Structured `RenderedCarve` values with HTML, headings, frontmatter and file
+  include reports; an `AsCarve` Eloquent cast that stores source.
+- A Blade component, static `.crv` views, Markdown/HTML imports, lint helpers,
+  string macros and Artisan render, convert and lint commands.
+- Strict safe mode, content presets, configurable default converter, lazy
+  resolution and programmatic customization.
+- Preset, lint and character-limit validation with the existing constructor
+  and custom-message API preserved.
+- Cache TTL, prefix and callback-version settings; custom extension classes
+  and instances with constructor options.
+
+### Fixed
+
+- Separate cached output for extensions with different options and engine
+  versions. Mutable engine access disables caching to prevent stale results.
+- Keep file diagnostics and dependency invalidation in structured results;
+  expand contained includes for every Artisan output format.
+
+### Changed
+
+- Reject unknown extension names and options in converter configuration.
+  Standalone `ExtensionFactory::create()` still returns null for unknown names.
+- Extension option types must match their constructors; numeric strings are
+  no longer coerced. Previous cache keys expire under their existing policy
+  and are not reused after upgrading.
+- Require Laravel console/database components and Symfony Finder for commands
+  and casts.
+
+### Credits
+
+- Adapt Laravel integrations from Jefferson Gonçalves's MIT-licensed package.
+  Retain its notice in `LICENSE`.
+
 ## 0.1.6 - 2026-09-20
 
 ### Added
