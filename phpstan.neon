@@ -1,12 +1,8 @@
 parameters:
+	stubFiles:
+		- tests/stubs/macros.stub
 	level: 9
 	paths:
 		- src/
 		- tests/
 	tmpDir: tmp/phpstan
-	ignoreErrors:
-		-
-			# Runtime-checked named-argument spread in ExtensionFactory — PHPStan
-			# cannot narrow named-argument spread from an array shape.
-			identifier: argument.type
-			path: src/Service/ExtensionFactory.php

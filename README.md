@@ -9,6 +9,16 @@
 
 **[View the live demo →](https://markup-carve.github.io/laravel-carve-demo/)**
 
+## Authoring in Laravel
+
+Render structured values with `Carve::render()`, store source with the
+`AsCarve` Eloquent cast, and use `<x-carve>` or static `.crv` views in Blade.
+Validation supports content presets, lint findings and character limits.
+Artisan commands render, convert and lint documents.
+
+See [Authoring in Laravel](docs/guide/authoring.md) for these APIs, imports,
+string helpers, converter customization and cache configuration.
+
 ## Installation
 
 ```bash

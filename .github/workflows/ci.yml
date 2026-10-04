@@ -102,3 +102,22 @@ jobs:
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse
+
+  engine-compatibility:
+    name: Engine ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: ['0.1.9', '0.1.10']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite, pdo_sqlite
+          coverage: none
+      - name: Install selected engine
+        run: composer require "markup-carve/carve-php:${{ matrix.engine }}" --no-interaction --prefer-dist --no-progress
+      - run: vendor/bin/phpunit
