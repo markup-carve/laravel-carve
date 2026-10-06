@@ -284,6 +284,13 @@ $request->validate([
 ]);
 ```
 
+## Laravel Boost
+
+The package ships [Laravel Boost](https://github.com/laravel/boost) resources:
+a core guideline and a `carve-development` skill under `resources/boost`. Apps
+using Boost pick them up on `php artisan boost:install` or `boost:update`, so
+AI agents write Carve (not Markdown) and use the safe rendering APIs.
+
 ## Documentation
 
 Full documentation: **[markup-carve.github.io/laravel-carve](https://markup-carve.github.io/laravel-carve/)**
