@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- A Laravel Boost guideline and a `carve-development` skill under
+  `resources/boost/`, shipped with the package.
+
+### Changed
+
+- Require carve-php `^0.1.11`, up from `^0.1.9`. The linters below do not exist
+  in 0.1.9 or 0.1.10, so the old floor no longer resolves.
+
+### Fixed
+
+- `Carve::lint()`, `carve:lint` and `(new ValidCarve())->lint()` report the
+  rules carve-php added after 0.1.9. The linter list was written against the
+  seven linters that release shipped and did not grow with the engine, so
+  `unresolved-reference-link`, `broken-fragment-link`, `broken-crossref`,
+  `duplicate-heading-id`, `unresolved-footnote`, `unattached-block-attribute`
+  and the other rules of `ReferenceLinter`, `SourceLinter`,
+  `ReferencesPlacementLinter` and `DefinitionTermFoldLinter` were never
+  reported. Documents that passed `ValidCarve::lint()` before may now fail it.
+
 ## 0.1.7 - 2026-10-04
 
 ### Added
