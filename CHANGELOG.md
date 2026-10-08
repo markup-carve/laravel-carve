@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- A Laravel Boost guideline and a `carve-development` skill under
+  `resources/boost/`, shipped with the package.
+
 ### Fixed
 
 - `Carve::lint()`, `carve:lint` and `(new ValidCarve())->lint()` report the
