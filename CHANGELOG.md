@@ -7,6 +7,11 @@
 - A Laravel Boost guideline and a `carve-development` skill under
   `resources/boost/`, shipped with the package.
 
+### Changed
+
+- Require carve-php `^0.1.11`, up from `^0.1.9`. The linters below do not exist
+  in 0.1.9 or 0.1.10, so the old floor no longer resolves.
+
 ### Fixed
 
 - `Carve::lint()`, `carve:lint` and `(new ValidCarve())->lint()` report the
