@@ -8,12 +8,16 @@ use Closure;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
+use MarkupCarve\Carve\Lint\DefinitionTermFoldLinter;
 use MarkupCarve\Carve\Lint\FigureGroupLinter;
 use MarkupCarve\Carve\Lint\LintWarning;
 use MarkupCarve\Carve\Lint\MarkdownHabitLinter;
 use MarkupCarve\Carve\Lint\QuoteFenceLinter;
+use MarkupCarve\Carve\Lint\ReferenceLinter;
+use MarkupCarve\Carve\Lint\ReferencesPlacementLinter;
 use MarkupCarve\Carve\Lint\RetiredSpellingLinter;
 use MarkupCarve\Carve\Lint\SemanticAttributeLinter;
+use MarkupCarve\Carve\Lint\SourceLinter;
 use MarkupCarve\Carve\Lint\TableColumnLinter;
 use MarkupCarve\Carve\Lint\TemplateSourceLinter;
 use MarkupCarve\Carve\Node\Document;
@@ -213,6 +217,10 @@ class CarveManager
             (new TemplateSourceLinter())->lint($source),
             (new FigureGroupLinter())->lint($source),
             (new QuoteFenceLinter())->lint($source),
+            (new ReferenceLinter())->lint($source),
+            (new ReferencesPlacementLinter())->lint($source),
+            (new DefinitionTermFoldLinter())->lint($source),
+            (new SourceLinter())->lint($source),
         );
         usort($warnings, static fn (LintWarning $a, LintWarning $b): int => [$a->line, $a->column] <=> [$b->line, $b->column]);
 

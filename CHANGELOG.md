@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fixed
+
+- `Carve::lint()`, `carve:lint` and `(new ValidCarve())->lint()` report the
+  rules carve-php added after 0.1.9. The linter list was written against the
+  seven linters that release shipped and did not grow with the engine, so
+  `unresolved-reference-link`, `broken-fragment-link`, `broken-crossref`,
+  `duplicate-heading-id`, `unresolved-footnote`, `unattached-block-attribute`
+  and the other rules of `ReferenceLinter`, `SourceLinter`,
+  `ReferencesPlacementLinter` and `DefinitionTermFoldLinter` were never
+  reported. Documents that passed `ValidCarve::lint()` before may now fail it.
+
 ## 0.1.7 - 2026-10-04
 
 ### Added
