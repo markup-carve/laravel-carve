@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+## 0.1.8 - 2026-10-08
 ### Added
 
 - A Laravel Boost guideline and a `carve-development` skill under
