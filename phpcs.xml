@@ -4,6 +4,7 @@
     <arg name="cache" value=".phpcs.cache"/>
 
     <file>src/</file>
+    <file>scripts/</file>
     <file>tests/</file>
 
     <exclude-pattern>*/vendor/*</exclude-pattern>
