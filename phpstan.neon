@@ -4,5 +4,6 @@ parameters:
 	level: 9
 	paths:
 		- src/
+		- scripts/
 		- tests/
 	tmpDir: tmp/phpstan
