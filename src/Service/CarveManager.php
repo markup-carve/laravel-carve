@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
 use MarkupCarve\Carve\Lint\DefinitionTermFoldLinter;
+use MarkupCarve\Carve\Lint\DelimitedTableLinter;
 use MarkupCarve\Carve\Lint\FigureGroupLinter;
 use MarkupCarve\Carve\Lint\LintWarning;
 use MarkupCarve\Carve\Lint\MarkdownHabitLinter;
@@ -214,6 +215,7 @@ class CarveManager
             (new SemanticAttributeLinter())->lint($source),
             (new RetiredSpellingLinter())->lint($source),
             (new TableColumnLinter())->lint($source),
+            (new DelimitedTableLinter())->lint($source),
             (new TemplateSourceLinter())->lint($source),
             (new FigureGroupLinter())->lint($source),
             (new QuoteFenceLinter())->lint($source),
