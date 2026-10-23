@@ -14,6 +14,7 @@ use MarkupCarve\LaravelCarve\Service\CarveManager;
  * @method static \MarkupCarve\Carve\Node\Document parse(string $source, ?string $converter = null)
  * @method static string fromMarkdown(string $source)
  * @method static string fromHtml(string $source)
+ * @method static string format(string $source, bool $alignTables = false)
  * @method static list<\MarkupCarve\Carve\Lint\LintWarning> lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null)
  * @method static \MarkupCarve\LaravelCarve\Service\CarveConverterInterface profile(?string $name = null)
  * @method static static extend(string $name, \Closure $callback)

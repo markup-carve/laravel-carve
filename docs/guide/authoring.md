@@ -99,6 +99,7 @@ is configured, Carve view files must also be inside that root.
 Carve::fromMarkdown($markdown);
 Carve::fromHtml($html);
 Carve::lint($source);
+Carve::format($source, alignTables: true);
 Str::carve($source);
 str($source)->carveText()->limit(160);
 ```
@@ -113,7 +114,14 @@ php artisan carve:render page.crv --format=text --output=page.txt
 php artisan carve:convert page.md --output=page.crv
 php artisan carve:lint resources/views
 php artisan carve:lint resources/views --include-root=resources/views
+php artisan carve:fmt resources/views --check --align-tables
+php artisan carve:fmt resources/views --write --align-tables
 ```
+
+`Carve::format()` and `carve:fmt` return the canonical Carve source that carve-php's
+`carve fmt` prints. With `alignTables` or `--align-tables`, pipe table cells are
+padded so the columns line up. `carve:fmt` prints each file, rewrites it with
+`--write`, or exits unsuccessfully with `--check` when a file differs.
 
 With `--include-root`, `carve:lint` also lints the files that include directives
 pull in from below that root, and reports their findings at the included file.
