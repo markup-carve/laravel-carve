@@ -47,10 +47,12 @@ class LintCommand extends Command
 
                 continue;
             }
-            $warnings = $carve->lint($source, $includeRoot, $includeRoot === null ? null : (string)realpath($file));
-            foreach ($warnings as $warning) {
-                $location = $warning->file ?? $file;
-                $rows[] = ["{$location}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
+            $path = $includeRoot === null ? $file : ((string)realpath($file) ?: $file);
+            foreach ($carve->lint($source, $includeRoot, $includeRoot === null ? null : $path) as $warning) {
+                $location = $warning->file ?? $path;
+                // A file that is both linted and included by another one would report twice.
+                $rows["{$location}:{$warning->line}:{$warning->column}\0{$warning->rule}\0{$warning->message}"] =
+                    ["{$location}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
             }
         }
 
@@ -60,6 +62,7 @@ class LintCommand extends Command
             return $missing ? self::FAILURE : self::SUCCESS;
         }
 
+        $rows = array_values($rows);
         $this->table(['Location', 'Rule', 'Message'], $rows);
         $this->components->error(sprintf('%d Carve problem(s) found.', count($rows)));
 

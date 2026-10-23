@@ -67,6 +67,8 @@ class CommandsTest extends TestCase
             self::assertStringContainsString('child.crv:1:', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir . '/missing']));
             self::assertStringContainsString('is not a directory', Artisan::output());
+            self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir], '--include-root' => $dir]));
+            self::assertStringContainsString('1 Carve problem(s) found.', Artisan::output());
         } finally {
             foreach (glob($dir . '/*') ?: [] as $file) {
                 unlink($file);
