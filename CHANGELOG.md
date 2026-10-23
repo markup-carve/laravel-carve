@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.1.9 - 2026-10-23
+
+### Changed
+
+- Require carve-php `^0.1.14`, up from `^0.1.11` (#41, #42).
+
+### Fixed
+
+- `Carve::lint()`, `carve:lint` and `ValidCarve::lint()` now run carve-php's
+  `DocumentLinter`, so they report the rules 0.1.13 and 0.1.14 added:
+  `delimited-table-*` findings (#41), `list-marker-below-content-column`,
+  `description-separator-below-content-column`, `consumed-key-near-miss` and
+  `unclosed-code-fence` (#42).
+
 ## 0.1.8 - 2026-10-08
 ### Added
 
