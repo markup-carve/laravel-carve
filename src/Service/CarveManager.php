@@ -6,6 +6,7 @@ namespace MarkupCarve\LaravelCarve\Service;
 
 use Closure;
 use InvalidArgumentException;
+use MarkupCarve\Carve\CarveConverter as EngineConverter;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
 use MarkupCarve\Carve\Lint\DocumentLinter;
@@ -193,6 +194,14 @@ class CarveManager
     public function fromHtml(string $source): string
     {
         return (new HtmlToCarve())->convert($source);
+    }
+
+    /**
+     * Canonical Carve source, as `carve fmt` prints it.
+     */
+    public function format(string $source, bool $alignTables = false): string
+    {
+        return EngineConverter::toCarve($source, $alignTables);
     }
 
     /**

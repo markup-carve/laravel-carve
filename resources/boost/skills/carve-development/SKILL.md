@@ -124,6 +124,7 @@ $request->validate([
 Carve::fromMarkdown($markdown);   // returns Carve source
 Carve::fromHtml($html);
 Carve::lint($source);             // list of LintWarning
+Carve::format($source, true);     // canonical source, tables aligned
 ```
 
 ```sh
@@ -131,6 +132,7 @@ php artisan carve:render page.crv --format=html --profile=default
 php artisan carve:convert page.md --output=page.crv
 php artisan carve:lint resources/views
 php artisan carve:lint resources/views --include-root=resources/views  # also lint included files
+php artisan carve:fmt resources/views --check --align-tables
 ```
 
 ## File includes

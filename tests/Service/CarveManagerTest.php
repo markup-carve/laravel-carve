@@ -85,6 +85,15 @@ class CarveManagerTest extends TestCase
         self::assertContains('blockquote-marker-without-space', $rules(">no space\n"));
     }
 
+    public function testFormatReturnsCanonicalSourceAndAlignsTablesOnRequest(): void
+    {
+        $table = "| a | bb |\n|---|---|\n| ccc | d |\n";
+
+        self::assertSame("# T\n\ntext\n", $this->manager->format("# T\n\ntext  \n"));
+        self::assertSame($table, $this->manager->format($table));
+        self::assertSame("| a   | bb |\n|---  |--- |\n| ccc | d  |\n", $this->manager->format($table, true));
+    }
+
     public function testLintReportsTheRulesCarvePhp0114Added(): void
     {
         $manager = $this->manager;

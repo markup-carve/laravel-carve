@@ -76,4 +76,31 @@ class CommandsTest extends TestCase
             rmdir($dir);
         }
     }
+
+    public function testFormatPrintsChecksAndWritesWithAlignedTables(): void
+    {
+        $dir = sys_get_temp_dir() . '/carve-fmt-' . bin2hex(random_bytes(6));
+        mkdir($dir);
+        $table = "| a | bb |\n|---|---|\n| ccc | d |\n";
+        $aligned = "| a   | bb |\n|---  |--- |\n| ccc | d  |\n";
+        file_put_contents($dir . '/table.crv', $table);
+        try {
+            self::assertSame(0, Artisan::call('carve:fmt', ['paths' => [$dir . '/table.crv']]));
+            self::assertSame($table, Artisan::output());
+            self::assertSame(0, Artisan::call('carve:fmt', ['paths' => [$dir], '--check' => true]));
+            self::assertSame(1, Artisan::call('carve:fmt', ['paths' => [$dir], '--check' => true, '--align-tables' => true]));
+            self::assertStringContainsString('table.crv is not formatted', Artisan::output());
+            self::assertSame($table, file_get_contents($dir . '/table.crv'));
+            self::assertSame(0, Artisan::call('carve:fmt', ['paths' => [$dir], '--write' => true, '--align-tables' => true]));
+            self::assertSame($aligned, file_get_contents($dir . '/table.crv'));
+            self::assertSame(0, Artisan::call('carve:fmt', ['paths' => [$dir], '--check' => true, '--align-tables' => true]));
+            self::assertSame(1, Artisan::call('carve:fmt', ['paths' => [$dir], '--check' => true, '--write' => true]));
+            self::assertSame(1, Artisan::call('carve:fmt', ['paths' => [$dir . '/missing']]));
+        } finally {
+            foreach (glob($dir . '/*') ?: [] as $file) {
+                unlink($file);
+            }
+            rmdir($dir);
+        }
+    }
 }

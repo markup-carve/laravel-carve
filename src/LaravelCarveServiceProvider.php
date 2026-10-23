@@ -16,6 +16,7 @@ use Illuminate\View\Factory;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\ExtensionInterface;
 use MarkupCarve\LaravelCarve\Commands\ConvertCommand;
+use MarkupCarve\LaravelCarve\Commands\FormatCommand;
 use MarkupCarve\LaravelCarve\Commands\LintCommand;
 use MarkupCarve\LaravelCarve\Commands\RenderCommand;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
@@ -90,7 +91,7 @@ class LaravelCarveServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'carve');
         Blade::component('carve', CarveComponent::class);
         if ($this->app->runningInConsole()) {
-            $this->commands([RenderCommand::class, ConvertCommand::class, LintCommand::class]);
+            $this->commands([RenderCommand::class, ConvertCommand::class, LintCommand::class, FormatCommand::class]);
         }
         if (config('carve.views.enabled', true)) {
             $this->callAfterResolving('view', function (Factory $view): void {

@@ -9,6 +9,8 @@
 - `carve:lint --include-root=<dir>` and `Carve::lint($source, $includeRoot,
   $sourcePath)` also lint included files, through carve-php's `IncludeLinter`
   (#43).
+- `Carve::format($source, $alignTables)` and `carve:fmt` (`--write`, `--check`,
+  `--align-tables`) format Carve source as carve-php's `carve fmt` does (#44).
 
 ### Changed
 
