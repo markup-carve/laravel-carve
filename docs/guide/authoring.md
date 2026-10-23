@@ -104,6 +104,8 @@ str($source)->carveText()->limit(160);
 ```
 
 Imports produce Carve source. Render imported content with a safe converter.
+`Carve::lint()`, `carve:lint` and `ValidCarve::lint()` run carve-php's
+`DocumentLinter`, so they report every rule the installed engine ships.
 
 ```sh
 php artisan carve:render page.crv --format=html --profile=default

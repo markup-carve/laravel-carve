@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
+use MarkupCarve\Carve\Lint\DocumentLinter;
 use MarkupCarve\Carve\Lint\LintWarning;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
@@ -84,18 +85,31 @@ class CarveManagerTest extends TestCase
         self::assertContains('blockquote-marker-without-space', $rules(">no space\n"));
     }
 
-    /**
-     * The list in CarveManager::lint() is hand-written, so an engine release
-     * that adds a linter drops its rules without any test going red. 0.1.11
-     * added four and the list still named the seven that 0.1.9 shipped.
-     */
-    public function testLintCallsEveryLinterTheInstalledEngineShips(): void
+    public function testLintReportsTheRulesCarvePhp0114Added(): void
     {
-        $reflection = new ReflectionClass(CarveManager::class);
-        $file = $reflection->getFileName();
-        self::assertIsString($file);
-        $body = (string)file_get_contents($file);
+        $manager = $this->manager;
+        $rules = static fn (string $source): array => array_map(
+            static fn (LintWarning $warning): string => $warning->rule,
+            $manager->lint($source),
+        );
 
+        self::assertContains('list-marker-below-content-column', $rules("9. a\n   - b\n10. c\n   - d\n"));
+        self::assertContains('description-separator-below-content-column', $rules("- a\n  :: term\n: detail\n"));
+        self::assertContains('consumed-key-near-miss', $rules("{lose}\n- a\n- b\n"));
+        self::assertContains('unclosed-code-fence', $rules("```js\nx\n"));
+    }
+
+    /**
+     * CarveManager::lint() delegates to the engine's DocumentLinter. Guard that
+     * the aggregate still covers every linter the installed engine ships, so a
+     * new linter missing from it shows up here instead of being skipped silently.
+     */
+    public function testLintCoversEveryLinterTheInstalledEngineShips(): void
+    {
+        $manager = (string)file_get_contents((string)(new ReflectionClass(CarveManager::class))->getFileName());
+        self::assertStringContainsString('new DocumentLinter()', $manager);
+
+        $aggregate = (string)file_get_contents((string)(new ReflectionClass(DocumentLinter::class))->getFileName());
         $engineLintDir = dirname((string)(new ReflectionClass(LintWarning::class))->getFileName());
         $shipped = [];
         foreach ((array)glob($engineLintDir . '/*Linter.php') as $path) {
@@ -103,10 +117,12 @@ class CarveManagerTest extends TestCase
         }
         self::assertNotEmpty($shipped);
 
+        // IncludeLinter wraps DocumentLinter and needs an include resolver.
         $missing = array_values(array_filter(
             $shipped,
-            static fn (string $class): bool => !str_contains($body, 'new ' . $class . '()'),
+            static fn (string $class): bool => !in_array($class, ['DocumentLinter', 'IncludeLinter'], true)
+                && !str_contains($aggregate, 'new ' . $class . '()'),
         ));
-        self::assertSame([], $missing, 'CarveManager::lint() does not call: ' . implode(', ', $missing));
+        self::assertSame([], $missing, 'DocumentLinter does not call: ' . implode(', ', $missing));
     }
 }

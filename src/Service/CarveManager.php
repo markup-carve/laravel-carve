@@ -8,19 +8,7 @@ use Closure;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
-use MarkupCarve\Carve\Lint\DefinitionTermFoldLinter;
-use MarkupCarve\Carve\Lint\DelimitedTableLinter;
-use MarkupCarve\Carve\Lint\FigureGroupLinter;
-use MarkupCarve\Carve\Lint\LintWarning;
-use MarkupCarve\Carve\Lint\MarkdownHabitLinter;
-use MarkupCarve\Carve\Lint\QuoteFenceLinter;
-use MarkupCarve\Carve\Lint\ReferenceLinter;
-use MarkupCarve\Carve\Lint\ReferencesPlacementLinter;
-use MarkupCarve\Carve\Lint\RetiredSpellingLinter;
-use MarkupCarve\Carve\Lint\SemanticAttributeLinter;
-use MarkupCarve\Carve\Lint\SourceLinter;
-use MarkupCarve\Carve\Lint\TableColumnLinter;
-use MarkupCarve\Carve\Lint\TemplateSourceLinter;
+use MarkupCarve\Carve\Lint\DocumentLinter;
 use MarkupCarve\Carve\Node\Document;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 
@@ -210,23 +198,7 @@ class CarveManager
      */
     public function lint(string $source): array
     {
-        $warnings = array_merge(
-            (new MarkdownHabitLinter())->lint($source),
-            (new SemanticAttributeLinter())->lint($source),
-            (new RetiredSpellingLinter())->lint($source),
-            (new TableColumnLinter())->lint($source),
-            (new DelimitedTableLinter())->lint($source),
-            (new TemplateSourceLinter())->lint($source),
-            (new FigureGroupLinter())->lint($source),
-            (new QuoteFenceLinter())->lint($source),
-            (new ReferenceLinter())->lint($source),
-            (new ReferencesPlacementLinter())->lint($source),
-            (new DefinitionTermFoldLinter())->lint($source),
-            (new SourceLinter())->lint($source),
-        );
-        usort($warnings, static fn (LintWarning $a, LintWarning $b): int => [$a->line, $a->column] <=> [$b->line, $b->column]);
-
-        return $warnings;
+        return (new DocumentLinter())->lint($source);
     }
 
     private function getConverter(?string $name): CarveConverterInterface
