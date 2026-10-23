@@ -130,6 +130,7 @@ Carve::lint($source);             // list of LintWarning
 php artisan carve:render page.crv --format=html --profile=default
 php artisan carve:convert page.md --output=page.crv
 php artisan carve:lint resources/views
+php artisan carve:lint resources/views --include-root=resources/views  # also lint included files
 ```
 
 ## File includes

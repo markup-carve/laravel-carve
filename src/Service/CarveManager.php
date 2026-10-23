@@ -9,7 +9,9 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
 use MarkupCarve\Carve\Lint\DocumentLinter;
+use MarkupCarve\Carve\Lint\IncludeLinter;
 use MarkupCarve\Carve\Node\Document;
+use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 
 class CarveManager
@@ -194,11 +196,18 @@ class CarveManager
     }
 
     /**
+     * With an include root, included files are linted too and their findings
+     * carry `file` and `includedBy`.
+     *
      * @return list<\MarkupCarve\Carve\Lint\LintWarning>
      */
-    public function lint(string $source): array
+    public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
-        return (new DocumentLinter())->lint($source);
+        if ($includeRoot === null) {
+            return (new DocumentLinter())->lint($source);
+        }
+
+        return (new IncludeLinter())->lint($source, [], new FilesystemIncludeResolver($includeRoot), $sourcePath);
     }
 
     private function getConverter(?string $name): CarveConverterInterface

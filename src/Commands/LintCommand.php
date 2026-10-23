@@ -14,7 +14,8 @@ class LintCommand extends Command
      * @var string
      */
     protected $signature = 'carve:lint
-        {paths* : Files or directories (directories are searched for *.crv)}';
+        {paths* : Files or directories (directories are searched for *.crv)}
+        {--include-root= : Also lint the files that include directives pull in from below this root}';
 
     /**
      * @var string
@@ -26,6 +27,17 @@ class LintCommand extends Command
         $rows = [];
         $missing = false;
         $files = $this->files($missing);
+        $includeRoot = $this->option('include-root');
+        $includeRoot = is_string($includeRoot) && $includeRoot !== '' ? $includeRoot : null;
+        if ($includeRoot !== null) {
+            $resolved = realpath($includeRoot);
+            if ($resolved === false || !is_dir($resolved)) {
+                $this->components->error("Include root [{$includeRoot}] is not a directory.");
+
+                return self::FAILURE;
+            }
+            $includeRoot = $resolved;
+        }
 
         foreach ($files as $file) {
             $source = @file_get_contents($file);
@@ -35,8 +47,10 @@ class LintCommand extends Command
 
                 continue;
             }
-            foreach ($carve->lint($source) as $warning) {
-                $rows[] = ["{$file}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
+            $warnings = $carve->lint($source, $includeRoot, $includeRoot === null ? null : (string)realpath($file));
+            foreach ($warnings as $warning) {
+                $location = $warning->file ?? $file;
+                $rows[] = ["{$location}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
             }
         }
 

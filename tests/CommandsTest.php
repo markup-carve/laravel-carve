@@ -54,4 +54,24 @@ class CommandsTest extends TestCase
             rmdir($dir);
         }
     }
+
+    public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void
+    {
+        $dir = sys_get_temp_dir() . '/carve-lint-include-' . bin2hex(random_bytes(6));
+        mkdir($dir);
+        file_put_contents($dir . '/main.crv', "# Main\n\n{{ child.crv }}\n");
+        file_put_contents($dir . '/child.crv', "**bold**\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv']]));
+            self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir]));
+            self::assertStringContainsString('child.crv:1:', Artisan::output());
+            self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir . '/missing']));
+            self::assertStringContainsString('is not a directory', Artisan::output());
+        } finally {
+            foreach (glob($dir . '/*') ?: [] as $file) {
+                unlink($file);
+            }
+            rmdir($dir);
+        }
+    }
 }
