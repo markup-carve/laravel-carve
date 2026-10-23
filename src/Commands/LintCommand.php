@@ -14,7 +14,8 @@ class LintCommand extends Command
      * @var string
      */
     protected $signature = 'carve:lint
-        {paths* : Files or directories (directories are searched for *.crv)}';
+        {paths* : Files or directories (directories are searched for *.crv)}
+        {--include-root= : Also lint the files that include directives pull in from below this root}';
 
     /**
      * @var string
@@ -26,6 +27,17 @@ class LintCommand extends Command
         $rows = [];
         $missing = false;
         $files = $this->files($missing);
+        $includeRoot = $this->option('include-root');
+        $includeRoot = is_string($includeRoot) && $includeRoot !== '' ? $includeRoot : null;
+        if ($includeRoot !== null) {
+            $resolved = realpath($includeRoot);
+            if ($resolved === false || !is_dir($resolved)) {
+                $this->components->error("Include root [{$includeRoot}] is not a directory.");
+
+                return self::FAILURE;
+            }
+            $includeRoot = $resolved;
+        }
 
         foreach ($files as $file) {
             $source = @file_get_contents($file);
@@ -35,8 +47,12 @@ class LintCommand extends Command
 
                 continue;
             }
-            foreach ($carve->lint($source) as $warning) {
-                $rows[] = ["{$file}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
+            $path = $includeRoot === null ? $file : ((string)realpath($file) ?: $file);
+            foreach ($carve->lint($source, $includeRoot, $includeRoot === null ? null : $path) as $warning) {
+                $location = $warning->file ?? $path;
+                // A file that is both linted and included by another one would report twice.
+                $rows["{$location}:{$warning->line}:{$warning->column}\0{$warning->rule}\0{$warning->message}"] =
+                    ["{$location}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
             }
         }
 
@@ -46,6 +62,7 @@ class LintCommand extends Command
             return $missing ? self::FAILURE : self::SUCCESS;
         }
 
+        $rows = array_values($rows);
         $this->table(['Location', 'Rule', 'Message'], $rows);
         $this->components->error(sprintf('%d Carve problem(s) found.', count($rows)));
 

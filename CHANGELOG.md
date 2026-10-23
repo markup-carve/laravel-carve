@@ -4,6 +4,12 @@
 
 ## 0.1.9 - 2026-10-23
 
+### Added
+
+- `carve:lint --include-root=<dir>` and `Carve::lint($source, $includeRoot,
+  $sourcePath)` also lint included files, through carve-php's `IncludeLinter`
+  (#43).
+
 ### Changed
 
 - Require carve-php `^0.1.14`, up from `^0.1.11` (#41, #42).

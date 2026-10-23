@@ -112,7 +112,13 @@ php artisan carve:render page.crv --format=html --profile=default
 php artisan carve:render page.crv --format=text --output=page.txt
 php artisan carve:convert page.md --output=page.crv
 php artisan carve:lint resources/views
+php artisan carve:lint resources/views --include-root=resources/views
 ```
+
+With `--include-root`, `carve:lint` also lints the files that include directives
+pull in from below that root, and reports their findings at the included file.
+`Carve::lint($source, $includeRoot, $sourcePath)` does the same in code; the
+root is never read from `carve.include_root`, so linting stays explicit.
 
 Rendering supports HTML, text, Markdown and ANSI. All file formats expand
 includes when `carve.include_root` is configured. The entry document and
