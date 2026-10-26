@@ -16,7 +16,7 @@ composer require markup-carve/laravel-carve
 ## Usage
 
 ```blade
-@carve($article->body)
+@carve('# Hello')
 ```
 
 ## Documentation
