@@ -24,7 +24,3 @@ composer require markup-carve/laravel-carve
 - [Carve documentation](https://markup-carve.github.io/carve/)
 - [Documentation index](docs/README.md)
 - [Laravel guide](docs/guide/index.md)
-
-## License
-
-[MIT](LICENSE)
