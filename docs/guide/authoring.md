@@ -106,7 +106,18 @@ str($source)->carveText()->limit(160);
 
 Imports produce Carve source. Render imported content with a safe converter.
 `Carve::lint()`, `carve:lint` and `ValidCarve::lint()` run carve-php's
-`DocumentLinter`, so they report every rule the installed engine ships.
+`DocumentLinter`, so they report every rule the installed engine ships. That
+includes retired spellings: a `---` thematic break (`thematic-break-spelling`)
+and the 0.1.13 alignment prefixes such as `|=>` (`deprecated-cell-alignment`).
+A `%%` comment turns a rule off for one line or a region:
+
+```carve
+%% carve-lint-disable-next-line thematic-break-spelling
+---
+```
+
+The other forms are `%% carve-lint-disable-line`, `%% carve-lint-disable` and
+`%% carve-lint-enable`, each followed by optional rule ids.
 
 ```sh
 php artisan carve:render page.crv --format=html --profile=default
@@ -119,7 +130,8 @@ php artisan carve:fmt resources/views --write --align-tables
 ```
 
 `Carve::format()` and `carve:fmt` return the canonical Carve source that carve-php's
-`carve fmt` prints. With `alignTables` or `--align-tables`, pipe table cells are
+`carve fmt` prints: native `|=` header cells, alignment in braces (`|={>}`) and
+`***` thematic breaks. With `alignTables` or `--align-tables`, pipe table cells are
 padded so the columns line up. `carve:fmt` prints each file, rewrites it with
 `--write`, or exits unsuccessfully with `--check` when a file differs.
 

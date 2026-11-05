@@ -81,8 +81,8 @@ class CommandsTest extends TestCase
     {
         $dir = sys_get_temp_dir() . '/carve-fmt-' . bin2hex(random_bytes(6));
         mkdir($dir);
-        $table = "| a | bb |\n|---|---|\n| ccc | d |\n";
-        $aligned = "| a   | bb |\n|---  |--- |\n| ccc | d  |\n";
+        $table = "|= a |= bb |\n| ccc | d |\n";
+        $aligned = "|= a  |= bb |\n| ccc | d   |\n";
         file_put_contents($dir . '/table.crv', $table);
         try {
             self::assertSame(0, Artisan::call('carve:fmt', ['paths' => [$dir . '/table.crv']]));

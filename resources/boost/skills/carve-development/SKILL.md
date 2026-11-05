@@ -24,6 +24,7 @@ Carve looks like Markdown but differs in ways that silently change output:
 | Superscript / subscript | n/a | `{^x^}` / `{,x,}` |
 | Heading id | `# Title {#id}` | `{#id}` on the line above the heading |
 | Table header | `\|---\|` row | `\|=` header cells |
+| Column alignment | `:--` / `--:` / `:-:` | `\|={<}` / `\|={>}` / `\|={~}` |
 
 - A `-` or `1.` line directly after a paragraph folds into the paragraph. Put a blank line before the first list item.
 - Block attributes (`{.class}`, `{#id}`) go on a standalone line before the block.
@@ -116,7 +117,7 @@ $request->validate([
 
 - `preset()` rejects markup the preset forbids. Match the preset of the profile that renders the field.
 - `strict()` rejects parse warnings such as unresolved references.
-- `lint()` rejects likely mistakes such as Markdown `**bold**`.
+- `lint()` rejects likely mistakes such as Markdown `**bold**`, and also retired spellings such as a `---` thematic break.
 
 ## Imports and commands
 
