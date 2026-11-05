@@ -191,7 +191,7 @@ jobs:
           // $dir would move both sides of the comparison together and guard
           // nothing. So the reference is the corpus's SOURCE: tests/corpus is
           // generated from the `::: compare` blocks in
-          // resources/examples/{core,extensions,edge-cases}.md, one pair per `carve`
+          // resources/examples/{core,extensions}.md and edge-cases/*.md, one pair per `carve`
           // fence in a block, and the generator refuses to write a corpus where the
           // two disagree. Both are in the checkout above, so this needs no second
           // clone.
@@ -201,8 +201,10 @@ jobs:
           // example upstream now moves the expectation on the next run.
           $examplesDir = dirname($dir, 2) . '/resources/examples';
           $declared = 0;
-          foreach (['core.md', 'extensions.md', 'edge-cases.md'] as $page) {
-              $path = $examplesDir . '/' . $page;
+          // carve#4132 split edge-cases.md into one file per section.
+          $sections = glob($examplesDir . '/edge-cases/*.md') ?: [$examplesDir . '/edge-cases/*.md'];
+          sort($sections);
+          foreach ([$examplesDir . '/core.md', $examplesDir . '/extensions.md', ...$sections] as $path) {
               if (!is_file($path)) {
                   // Not a soft skip. Without this page there is no independent
                   // statement of how big the corpus should be, and a corpus check
@@ -220,7 +222,7 @@ jobs:
               exit(1);
           }
           if ($documents !== $declared) {
-              fwrite(STDERR, "::error::{$documents} corpus pairs found in {$dir}, but the spec's example pages declare {$declared}. Every carve example in a ::: compare block in resources/examples/{core,extensions,edge-cases}.md becomes one corpus pair, so a difference means the corpus checked out here is not the one those pages describe - a truncated or stale checkout, or a corpus that needs regenerating. It does not mean this run was clean.\n");
+              fwrite(STDERR, "::error::{$documents} corpus pairs found in {$dir}, but the spec's example pages declare {$declared}. Every carve example in a ::: compare block in resources/examples/{core,extensions}.md or edge-cases/*.md becomes one corpus pair, so a difference means the corpus checked out here is not the one those pages describe - a truncated or stale checkout, or a corpus that needs regenerating. It does not mean this run was clean.\n");
               exit(1);
           }
 

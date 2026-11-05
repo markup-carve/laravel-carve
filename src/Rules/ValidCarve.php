@@ -102,7 +102,7 @@ class ValidCarve implements ValidationRule
             if ($findings !== []) {
                 $fail($this->formatMessage($findings[0]->message));
             }
-        } catch (ParseException | LengthException $e) {
+        } catch (ParseException|LengthException $e) {
             $fail($this->formatMessage($e->getMessage()));
         }
     }
