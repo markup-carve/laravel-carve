@@ -22,6 +22,7 @@ If you're coming from Markdown, these are the main syntax changes:
 | Starting a list | may directly follow a paragraph | needs a blank line before the first item |
 | Heading id | `# Title {#id}` (some flavors) | attribute line *above* the heading: `{#id}` |
 | Table header | delimiter row `\|---\|` | `\|=` header cells (delimiter row also accepted) |
+| Column alignment | `:--`, `--:`, `:-:` in the delimiter row | `{<}`, `{>}`, `{~}` glued to the cell marker: `\|={>} Price \|` |
 
 Fenced code blocks work exactly like Markdown: `` ```php `` with the language directly after the fence. (A space after the fence, the Djot style, is also accepted.)
 
