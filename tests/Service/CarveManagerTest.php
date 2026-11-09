@@ -87,11 +87,45 @@ class CarveManagerTest extends TestCase
 
     public function testFormatReturnsCanonicalSourceAndAlignsTablesOnRequest(): void
     {
-        $table = "| a | bb |\n|---|---|\n| ccc | d |\n";
+        $table = "|= a |= bb |\n| ccc | d |\n";
 
         self::assertSame("# T\n\ntext\n", $this->manager->format("# T\n\ntext  \n"));
         self::assertSame($table, $this->manager->format($table));
-        self::assertSame("| a   | bb |\n|---  |--- |\n| ccc | d  |\n", $this->manager->format($table, true));
+        self::assertSame("|= a  |= bb |\n| ccc | d   |\n", $this->manager->format($table, true));
+    }
+
+    public function testFormatRewritesRetiredSpellingsToTheCanonicalOnes(): void
+    {
+        self::assertSame("|= a |= bb |\n| ccc | d |\n", $this->manager->format("| a | bb |\n|---|---|\n| ccc | d |\n"));
+        self::assertSame("|={<} a |={>} bb |\n| ccc | d |\n", $this->manager->format("|=< a |=> bb |\n| ccc | d |\n"));
+        self::assertSame("a\n\n***\n\nb\n", $this->manager->format("a\n\n---\n\nb\n"));
+    }
+
+    public function testLintReportsRetiredSpellingsAndHonorsSuppressionComments(): void
+    {
+        $manager = $this->manager;
+        $rules = static fn (string $source): array => array_map(
+            static fn (LintWarning $warning): string => $warning->rule,
+            $manager->lint($source),
+        );
+
+        self::assertSame(['deprecated-cell-alignment'], $rules("|=< a |= b |\n| 1 | 2 |\n"));
+        self::assertSame([], $rules("|={<} a |= b |\n| 1 | 2 |\n"));
+        self::assertSame(['thematic-break-spelling'], $rules("a\n\n---\n\nb\n"));
+        self::assertSame([], $rules("a\n\n%% carve-lint-disable-next-line thematic-break-spelling\n---\n\nb\n"));
+    }
+
+    public function testBracedCellAlignmentRenders(): void
+    {
+        $html = $this->manager->toHtml("|={<} a |={>} b |\n| 1 | 2 |\n");
+
+        self::assertStringContainsString('<th scope="col" style="text-align: left;">a</th>', $html);
+        self::assertStringContainsString('<td style="text-align: right;">2</td>', $html);
+    }
+
+    public function testFromMarkdownTurnsGitHubAlertsIntoAdmonitions(): void
+    {
+        self::assertSame("::: note\nHello\n:::\n", $this->manager->fromMarkdown("> [!NOTE]\n> Hello\n"));
     }
 
     public function testLintReportsTheRulesCarvePhp0114Added(): void

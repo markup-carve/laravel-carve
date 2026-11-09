@@ -20,7 +20,7 @@
     "homepage": "https://github.com/markup-carve/laravel-carve",
     "require": {
         "php": "^8.2",
-        "markup-carve/carve-php": "^0.1.14",
+        "markup-carve/carve-php": "dev-main#f528aaca2dd277ed52c0c8843ffdd77fa87f875d",
         "illuminate/contracts": "^11.0 || ^12.0 || ^13.0",
         "illuminate/support": "^11.0 || ^12.0 || ^13.0",
         "illuminate/view": "^11.0 || ^12.0 || ^13.0",
@@ -70,5 +70,11 @@
     },
     "suggest": {
         "symfony/yaml": "Parse YAML frontmatter with RenderedCarve::meta()."
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/markup-carve/carve-php"
+        }
+    ]
 }
