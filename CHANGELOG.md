@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 0.1.10 - 2026-11-12
+
+### Changed
+
+- Require carve-php `^0.1.17`, up from `^0.1.14` (#50).
+- `Carve::format()` and `carve:fmt` write `|=` header cells instead of a
+  `|---|` separator row, braced alignment (`|={>}`) instead of `|=>`, and `***`
+  for every thematic break (#50).
+- `Carve::lint()`, `carve:lint` and `ValidCarve::lint()` report
+  `deprecated-cell-alignment` and `thematic-break-spelling`, and honor
+  `%% carve-lint-disable-next-line` and the other suppression comments (#50).
+- `Carve::fromMarkdown()` turns GitHub alert blockquotes into admonitions (#50).
+
+### Breaking
+
+- The lint rule alias `a11y/heading-jump` is gone; use `heading-level-skip`.
+- `Carve::fromHtml()` and `carve:convert` no longer read `data-djot-*`
+  attributes (markup-carve/carve#5735).
+
 ## 0.1.9 - 2026-10-23
 
 ### Added

@@ -5,7 +5,7 @@
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%209-brightgreen.svg)](https://phpstan.org/)
 [![License](https://img.shields.io/packagist/l/markup-carve/laravel-carve)](LICENSE)
 
-Laravel integration for Carve through carve-php. This development branch pins an unreleased engine commit. It provides Blade rendering, services, validation, and caching. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+Laravel integration for Carve through carve-php. It provides Blade rendering, services, validation, and caching. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
 
 ## Install
 

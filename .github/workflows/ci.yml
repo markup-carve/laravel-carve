@@ -107,9 +107,13 @@ jobs:
         run: vendor/bin/phpstan analyse
 
   engine-compatibility:
-    name: Engine pinned main
+    name: Engine ${{ matrix.engine }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: ['0.1.17']
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
@@ -117,10 +121,6 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, sqlite, pdo_sqlite
           coverage: none
-      - name: Install pinned engine
-        run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Verify installed engine revision
-        run: |
-          actual="$(composer show markup-carve/carve-php --format=json | php -r '$package = json_decode(stream_get_contents(STDIN), true); echo $package["source"]["reference"] ?? "";')"
-          test "$actual" = a5b43d25fb2ec10e8eb18f905b1ff4734eb26dbb
+      - name: Install selected engine
+        run: composer require "markup-carve/carve-php:${{ matrix.engine }}" --no-interaction --prefer-dist --no-progress
       - run: vendor/bin/phpunit
