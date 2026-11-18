@@ -15,20 +15,33 @@ use MarkupCarve\LaravelCarve\RenderedCarve;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-/** Laravel's named, cacheable adapter over the public Carve2 API. */
 class CarveConverter implements CarveConverterInterface
 {
+    /**
+     * @var string
+     */
     public const OUTSIDE_ROOT = '[outside-root]';
 
-    /** @var array<string, mixed> */
+    /**
+     * @var array<string, mixed>
+     */
     private array $options;
+
     private ?string $includeRoot = null;
+
     private WriterRegistry $writers;
+
     private string $cacheSignature;
 
     /**
      * @param array<string, mixed> $options
-     * @param list<OutputWriter> $writers
+     * @param string|null $cacheVersion
+     * @param string $cachePrefix
+     * @param int|null $cacheTtl
+     * @param \Psr\Log\LoggerInterface|null $logger
+     * @param string|null $includeRoot
+     * @param \Illuminate\Contracts\Cache\Repository|null $cache
+     * @param list<\MarkupCarve\Carve2\Output\OutputWriter> $writers
      */
     public function __construct(
         array $options = [],
@@ -76,7 +89,9 @@ class CarveConverter implements CarveConverterInterface
         $this->cache = null;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function options(): array
     {
         return $this->options;
@@ -96,8 +111,13 @@ class CarveConverter implements CarveConverterInterface
         }
         $result = Carve2::renderWithDiagnostics($carve, $this->options);
         [$toc, $frontmatter] = $this->metadata(Carve2::parse($carve, $this->parseOptions()));
-        $rendered = new RenderedCarve($carve, $result->html, $toc, $frontmatter,
-            warnings: $this->warnings($result->diagnostics, $carve));
+        $rendered = new RenderedCarve(
+            $carve,
+            $result->html,
+            $toc,
+            $frontmatter,
+            warnings: $this->warnings($result->diagnostics, $carve),
+        );
         $this->cache?->put($key, $rendered, $this->cacheTtl);
 
         return $rendered;
@@ -112,8 +132,13 @@ class CarveConverter implements CarveConverterInterface
     {
         $rendered = $this->renderFile($path);
 
-        return ['value' => $rendered->html, 'warnings' => $rendered->warnings,
-            'dependencies' => $rendered->dependencies, 'suppressedWarnings' => $rendered->suppressedWarnings];
+        return [
+
+            'value' => $rendered->html,
+            'warnings' => $rendered->warnings,
+            'dependencies' => $rendered->dependencies,
+            'suppressedWarnings' => $rendered->suppressedWarnings,
+        ];
     }
 
     public function renderFile(string $path): RenderedCarve
@@ -122,8 +147,10 @@ class CarveConverter implements CarveConverterInterface
         $options = $this->fileOptions($realPath);
         $key = $this->cachePrefix . '_file_' . $this->cacheSignature . '_' . hash('xxh3', $realPath . $source);
         $cached = $this->cache?->get($key);
-        if (is_array($cached) && isset($cached['states'], $cached['rendered'])
-            && $cached['states'] === $this->dependencyStates(array_map(strval(...), array_keys($cached['states'])))) {
+        if (
+            is_array($cached) && isset($cached['states'], $cached['rendered'])
+            && $cached['states'] === $this->dependencyStates(array_map(strval(...), array_keys($cached['states'])))
+        ) {
             return $cached['rendered'];
         }
 
@@ -143,29 +170,47 @@ class CarveConverter implements CarveConverterInterface
             $this->logger?->warning('Carve diagnostic: {message}', $warning);
         }
         [$toc, $frontmatter] = $this->metadata($tree);
-        $rendered = new RenderedCarve($source, $result->html, $toc, $frontmatter,
-            warnings: $warnings, dependencies: $dependencies);
+        $rendered = new RenderedCarve(
+            $source,
+            $result->html,
+            $toc,
+            $frontmatter,
+            warnings: $warnings,
+            dependencies: $dependencies,
+        );
         $this->cache?->put($key, ['rendered' => $rendered, 'states' => $this->dependencyStates($targets)], $this->cacheTtl);
 
         return $rendered;
     }
 
-    /** @return array{string, string} */
+    /**
+     * @throws \InvalidArgumentException
+     *
+     * @return array{string, string}
+     */
     private function readFile(string $path): array
     {
         $realPath = realpath($path);
-        if ($realPath === false || !is_file($realPath) || ($source = file_get_contents($realPath)) === false) {
+        if ($realPath === false || !is_file($realPath)) {
             throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
         }
-        if ($this->includeRoot !== null && $realPath !== $this->includeRoot
-            && !str_starts_with($realPath, $this->includeRoot . DIRECTORY_SEPARATOR)) {
+        $source = file_get_contents($realPath);
+        if ($source === false) {
+            throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
+        }
+        if (
+            $this->includeRoot !== null && $realPath !== $this->includeRoot
+            && !str_starts_with($realPath, $this->includeRoot . DIRECTORY_SEPARATOR)
+        ) {
             throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
         }
 
         return [$realPath, $source];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function fileOptions(string $path): array
     {
         $options = $this->options;
@@ -176,19 +221,25 @@ class CarveConverter implements CarveConverterInterface
         return $options;
     }
 
-    /** Only options consumed by parse and resolve may enter parse calls.
+    /**
+     * Only options consumed by parse and resolve may enter parse calls.
+     *
      * @param array<string, mixed>|null $options
+     *
      * @return array<string, mixed>
      */
     private function parseOptions(?array $options = null): array
     {
         $options ??= $this->options;
+
         return array_intersect_key($options, array_flip([
             'includes', 'extensions', 'headingIds',
         ]));
     }
 
-    /** @return array{list<array{level: int, text: string, html: string, id: string}>, array{format: string, content: string}|null} */
+    /**
+     * @return array{list<array{level: int, text: string, html: string, id: string}>, array{format: string, content: string}|null}
+     */
     private function metadata(Node $tree): array
     {
         $toc = [];
@@ -200,14 +251,21 @@ class CarveConverter implements CarveConverterInterface
                 $text = $this->nodeText($node);
                 $level = $node->f['level'] ?? 1;
                 $id = $node->f['generatedId'] ?? '';
-                $toc[] = ['level' => is_int($level) ? $level : 1, 'text' => $text,
+                $toc[] = [
+
+                    'level' => is_int($level) ? $level : 1,
+                    'text' => $text,
                     'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    'id' => is_string($id) ? $id : ''];
+                    'id' => is_string($id) ? $id : '',
+                ];
             } elseif ($node->type === 'frontmatter') {
                 $format = $node->f['format'] ?? '';
                 $content = $node->f['value'] ?? '';
-                $frontmatter = ['format' => is_string($format) ? $format : '',
-                    'content' => is_string($content) ? $content : ''];
+                $frontmatter = [
+
+                    'format' => is_string($format) ? $format : '',
+                    'content' => is_string($content) ? $content : '',
+                ];
             }
             foreach (array_reverse($node->children ?? []) as $child) {
                 $stack[] = $child;
@@ -221,6 +279,7 @@ class CarveConverter implements CarveConverterInterface
     {
         if ($node->type === 'text') {
             $value = $node->f['value'] ?? '';
+
             return is_string($value) ? $value : '';
         }
         $text = '';
@@ -231,7 +290,10 @@ class CarveConverter implements CarveConverterInterface
         return $text;
     }
 
-    /** @param array{path: string, from: string|null, file: string|null, read: bool} $entry */
+    /**
+     * @param array{path: string, from: string|null, file: string|null, read: bool} $entry
+     * @param string $file
+     */
     private function dependencyPath(array $entry, string $file): string
     {
         if ($this->includeRoot === null) {
@@ -248,6 +310,7 @@ class CarveConverter implements CarveConverterInterface
 
     /**
      * @param list<string> $paths
+     *
      * @return array<string, string|null>
      */
     private function dependencyStates(array $paths): array
@@ -280,6 +343,8 @@ class CarveConverter implements CarveConverterInterface
 
     /**
      * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
+     * @param string $source
+     *
      * @return list<array<string, mixed>>
      */
     private function warnings(array $diagnostics, string $source): array
@@ -291,9 +356,14 @@ class CarveConverter implements CarveConverterInterface
             $line = substr_count($prefix, "\n") + 1;
             $previous = strrpos($prefix, "\n");
             $column = $offset - ($previous === false ? -1 : $previous);
-            $warnings[] = ['rule' => $diagnostic->code, 'message' => $diagnostic->message,
+            $warnings[] = [
+
+                'rule' => $diagnostic->code,
+                'message' => $diagnostic->message,
                 'file' => $diagnostic->file === null ? null : $this->containedIdentity($diagnostic->file),
-                'line' => $line, 'column' => $column];
+                'line' => $line,
+                'column' => $column,
+            ];
         }
 
         return $warnings;
@@ -324,7 +394,13 @@ class CarveConverter implements CarveConverterInterface
         return $this->writeTarget('ansi', $carve);
     }
 
-    /** @param array<string, mixed>|null $options */
+    /**
+     * @param string $format
+     * @param string $source
+     * @param array<string, mixed>|null $options
+     *
+     * @throws \InvalidArgumentException
+     */
     private function writeTarget(string $format, string $source, ?array $options = null): string
     {
         if (!$this->writers->has($format)) {

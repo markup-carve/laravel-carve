@@ -8,7 +8,7 @@ Run the Carve 0.2 upgrade tool from carve-js next2 on each existing source docum
 
 For a new source, separate a heading after paragraph text with a blank line. Use native header cells in tables and braced alignment. A 0.2 example:
 
-    # Overview
+    = Overview
 
     A *strong* point.
 

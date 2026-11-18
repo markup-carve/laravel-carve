@@ -154,8 +154,10 @@ class LaravelCarveServiceProvider extends ServiceProvider
             throw new InvalidArgumentException('carve extensions must be an array.');
         }
         foreach ($extensionConfig as $entry) {
-            if (!is_string($entry) && !is_array($entry)
-                && !$entry instanceof ExtensionDefinition && !$entry instanceof ExtensionProvider) {
+            if (
+                !is_string($entry) && !is_array($entry)
+                && !$entry instanceof ExtensionDefinition && !$entry instanceof ExtensionProvider
+            ) {
                 throw new InvalidArgumentException('Carve extensions must be names, configuration arrays or Carve2 definitions.');
             }
             array_push($extensions, ...$factory->create($entry));

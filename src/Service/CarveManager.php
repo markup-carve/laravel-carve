@@ -208,9 +208,13 @@ class CarveManager
      */
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
-        $options = $includeRoot === null ? [] : ['includes' => [
-            'resolver' => FileResolver::forRoot($includeRoot), 'file' => $sourcePath,
-        ]];
+        $options = $includeRoot === null ? [] : [
+
+            'includes' => [
+                'resolver' => FileResolver::forRoot($includeRoot),
+                'file' => $sourcePath,
+            ],
+        ];
 
         return array_values(Carve2::lint($source, $options));
     }

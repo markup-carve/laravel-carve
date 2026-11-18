@@ -9,11 +9,14 @@ use MarkupCarve\Carve2\Extension\ExtensionDefinition;
 use MarkupCarve\Carve2\Extension\ExtensionProvider;
 use MarkupCarve\Carve2\Extension\Tabs;
 
-/** Resolve only extension definitions that the Carve2 public API can host. */
 class ExtensionFactory
 {
-    /** @param array<mixed, mixed>|ExtensionDefinition|ExtensionProvider|string $config
-     * @return list<ExtensionDefinition|ExtensionProvider>
+    /**
+     * @param \MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider|array<mixed, mixed>|string $config
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return list<\MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider>
      */
     public function create(ExtensionDefinition|ExtensionProvider|array|string $config): array
     {
@@ -27,6 +30,7 @@ class ExtensionFactory
         if ($type === 'tabs') {
             return array_values(Tabs::extensions(true));
         }
+
         throw new InvalidArgumentException(sprintf(
             'Carve 0.2 extension "%s" is not available yet.',
             is_string($type) ? $type : get_debug_type($type),
