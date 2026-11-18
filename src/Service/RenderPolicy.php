@@ -52,6 +52,14 @@ final class RenderPolicy
             'labels' => 'labels',
             'social' => 'social',
         ];
+        foreach (array_keys($config) as $key) {
+            if (
+                !array_key_exists($key, $names)
+                && !in_array($key, ['extensions', 'writers', 'cache_version'], true)
+            ) {
+                throw new InvalidArgumentException(sprintf('Unknown Carve2 profile setting "%s".', $key));
+            }
+        }
         $options = [];
         foreach ($names as $setting => $name) {
             if (array_key_exists($setting, $config)) {

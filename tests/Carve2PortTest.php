@@ -88,6 +88,36 @@ class Carve2PortTest extends TestCase
         self::assertSame('from v2 tree', $manager->toText('hello'));
     }
 
+    public function testTabsRegistrationUsesCarve2Definitions(): void
+    {
+        config()->set('carve.converters.default.extensions', ['tabs']);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $source = ":::: tabs\n::: tab \"One\"\nx\n:::\n::::\n";
+        self::assertStringContainsString('class="tabs"', Carve::toHtml($source));
+        self::assertStringContainsString('class="tab-panel"', Carve::toHtml($source));
+    }
+
+    public function testLegacySecurityOptionFailsExplicitly(): void
+    {
+        config()->set('carve.converters.default.safe_mode', false);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Carve 0.1 option "safe_mode"');
+        Carve::toHtml('text');
+    }
+
+    public function testUnknownProfileSettingFailsExplicitly(): void
+    {
+        config()->set('carve.converters.default.souce_lines', true);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown Carve2 profile setting "souce_lines".');
+        Carve::toHtml('text');
+    }
+
     public function testUnavailableWriterHasClearError(): void
     {
         $this->expectException(InvalidArgumentException::class);
