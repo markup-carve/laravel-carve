@@ -2,8 +2,8 @@ import { defineConfig } from 'vitepress'
 import { carveMarkdown } from 'carve-grammars/shiki'
 
 export default defineConfig({
-  title: 'Laravel Carve',
-  description: 'Carve markup language integration for Laravel — Blade directives, services, validation, and caching',
+  title: 'Laravel Carve 0.2',
+  description: 'Carve 0.2 integration for Laravel',
 
   base: '/laravel-carve/',
 
@@ -43,6 +43,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/' },
+            { text: 'Migration to 0.2', link: '/guide/migration-02' },
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Configuration', link: '/guide/configuration' },
           ],
@@ -60,7 +61,7 @@ export default defineConfig({
           text: 'Advanced',
           items: [
             { text: 'Extensions', link: '/guide/extensions' },
-            { text: 'Safe Mode', link: '/guide/safe-mode' },
+            { text: 'Raw HTML and URL policy', link: '/guide/safe-mode' },
             { text: 'Caching', link: '/guide/caching' },
             { text: 'Carve Syntax', link: '/guide/carve-syntax' },
           ],
@@ -77,7 +78,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/markup-carve/laravel-carve/edit/main/docs/:path',
+      pattern: 'https://github.com/markup-carve/laravel-carve/edit/next2/docs/:path',
       text: 'Edit this page on GitHub',
     },
 

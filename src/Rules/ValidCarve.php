@@ -7,9 +7,8 @@ namespace MarkupCarve\LaravelCarve\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use InvalidArgumentException;
-use LengthException;
-use MarkupCarve\Carve\CarveConverter;
-use MarkupCarve\Carve\Exception\ParseException;
+use MarkupCarve\Carve2\Carve2 as Engine;
+use MarkupCarve\Carve2\CarveException;
 use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\Service\RenderPolicy;
 
@@ -81,28 +80,21 @@ class ValidCarve implements ValidationRule
 
             return;
         }
-        $converter = new CarveConverter(warnings: true, profile: RenderPolicy::preset($this->preset));
         try {
-            $converter->parse($value);
-            if ($converter->hasProfileViolations()) {
-                $fail($this->formatMessage('markup is not allowed by the ' . $this->preset . ' preset'));
+            $options = $this->preset === null ? [] : ['profile' => $this->preset];
+            $result = Engine::renderWithDiagnostics($value, $options);
+            foreach ($result->diagnostics as $diagnostic) {
+                if ($diagnostic->channel === 'render-loss') {
+                    $fail($this->formatMessage($diagnostic->message));
 
-                return;
+                    return;
+                }
             }
-
-            if ($this->strict && $converter->hasWarnings()) {
-                $warnings = $converter->getWarnings();
-                $firstWarning = $warnings[0] ?? null;
-                $errorMessage = $firstWarning?->getMessage() ?? 'Parse warnings detected';
-                $fail($this->formatMessage($errorMessage));
-
-                return;
-            }
-            $findings = $this->lint ? Carve::lint($value) : [];
+            $findings = ($this->lint || $this->strict) ? Carve::lint($value) : [];
             if ($findings !== []) {
                 $fail($this->formatMessage($findings[0]->message));
             }
-        } catch (ParseException|LengthException $e) {
+        } catch (CarveException $e) {
             $fail($this->formatMessage($e->getMessage()));
         }
     }

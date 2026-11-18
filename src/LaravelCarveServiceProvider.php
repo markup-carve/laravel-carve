@@ -14,7 +14,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Illuminate\View\Factory;
 use InvalidArgumentException;
-use MarkupCarve\Carve\Extension\ExtensionInterface;
+use MarkupCarve\Carve2\Extension\ExtensionDefinition;
+use MarkupCarve\Carve2\Extension\ExtensionProvider;
+use MarkupCarve\Carve2\Output\OutputWriter;
 use MarkupCarve\LaravelCarve\Commands\ConvertCommand;
 use MarkupCarve\LaravelCarve\Commands\FormatCommand;
 use MarkupCarve\LaravelCarve\Commands\LintCommand;
@@ -145,66 +147,43 @@ class LaravelCarveServiceProvider extends ServiceProvider
         if (!is_array($cacheConfig)) {
             throw new InvalidArgumentException('carve.cache must be a configuration array.');
         }
+        $options = RenderPolicy::options($config);
         $extensions = [];
-        $extConfigs = $config['extensions'] ?? [];
-        if (is_array($extConfigs)) {
-            foreach ($extConfigs as $extConfig) {
-                if (is_string($extConfig)) {
-                    $normalized = $extConfig;
-                } elseif (is_array($extConfig)) {
-                    /** @var array<string, mixed> $normalized */
-                    $normalized = $extConfig;
-                } elseif ($extConfig instanceof ExtensionInterface) {
-                    $normalized = $extConfig;
-                } else {
-                    throw new InvalidArgumentException('Carve extensions must be names, configuration arrays or extension instances.');
-                }
-                $extension = $factory->create($normalized);
-                if ($extension === null) {
-                    throw new InvalidArgumentException('Unknown Carve extension in converter configuration.');
-                }
-                $extensions[] = $extension;
-            }
+        $extensionConfig = $config['extensions'] ?? [];
+        if (!is_array($extensionConfig)) {
+            throw new InvalidArgumentException('carve extensions must be an array.');
         }
-
-        $softBreakMode = $config['soft_break_mode'] ?? null;
-        $symbols = [];
-        $symbolConfig = $config['symbols'] ?? [];
-        if (is_array($symbolConfig)) {
-            foreach ($symbolConfig as $name => $value) {
-                if (is_string($name) && is_string($value)) {
-                    $symbols[$name] = $value;
-                }
+        foreach ($extensionConfig as $entry) {
+            if (!is_string($entry) && !is_array($entry)
+                && !$entry instanceof ExtensionDefinition && !$entry instanceof ExtensionProvider) {
+                throw new InvalidArgumentException('Carve extensions must be names, configuration arrays or Carve2 definitions.');
             }
+            array_push($extensions, ...$factory->create($entry));
         }
-
-        $labels = [];
-        if (isset($config['labels']) && is_array($config['labels'])) {
-            foreach ($config['labels'] as $key => $value) {
-                if (is_string($key) && is_string($value)) {
-                    $labels[$key] = $value;
-                }
+        if ($extensions !== []) {
+            $options['extensions'] = $extensions;
+        }
+        $writers = [];
+        $writerConfig = $config['writers'] ?? [];
+        if (!is_array($writerConfig)) {
+            throw new InvalidArgumentException('carve writers must be an array.');
+        }
+        foreach ($writerConfig as $writer) {
+            if (!$writer instanceof OutputWriter) {
+                throw new InvalidArgumentException('Carve writers must implement the Carve2 OutputWriter interface.');
             }
+            $writers[] = $writer;
         }
 
         return new CarveConverter(
-            safeMode: RenderPolicy::safeMode($config['safe_mode'] ?? true),
-            mode: is_string($config['mode'] ?? null) ? $config['mode'] : 'interactive',
-            softBreakMode: is_string($softBreakMode) ? $softBreakMode : null,
-            xhtml: (bool)($config['xhtml'] ?? false),
-            symbols: $symbols,
-            sourceLines: (bool)($config['source_lines'] ?? false),
+            options: $options,
             cache: $cache,
-            extensions: $extensions,
             includeRoot: $includeRoot,
             logger: $logger,
-            preset: isset($config['preset']) && is_string($config['preset']) ? $config['preset'] : null,
-            onDisallowed: isset($config['on_disallowed']) && is_string($config['on_disallowed']) ? $config['on_disallowed'] : null,
-            smartTypography: isset($config['smart_typography']) ? (bool)$config['smart_typography'] : null,
-            labels: $labels,
             cacheTtl: isset($cacheConfig['ttl']) && is_numeric($cacheConfig['ttl']) ? (int)$cacheConfig['ttl'] : null,
             cachePrefix: isset($cacheConfig['prefix']) && is_string($cacheConfig['prefix']) ? $cacheConfig['prefix'] : 'laravel_carve',
             cacheVersion: isset($config['cache_version']) && is_string($config['cache_version']) ? $config['cache_version'] : null,
+            writers: $writers,
         );
     }
 }

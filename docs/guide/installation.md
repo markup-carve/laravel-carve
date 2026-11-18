@@ -1,51 +1,5 @@
 # Installation
 
-## Requirements
+The next2 branch is unreleased. Use Composer VCS support to require this branch from Git and pin carve-php to the commit in this repository's composer.json. PHP 8.2 and the DOM extension are required. The service provider and facade are discovered by Laravel.
 
-- PHP 8.2 or higher
-- Laravel 11.x, 12.x or 13.x
-
-## Install via Composer
-
-```bash
-composer require markup-carve/laravel-carve
-```
-
-## Package Discovery
-
-Laravel's package auto-discovery will automatically register:
-
-- The `LaravelCarveServiceProvider`
-- The `Carve` facade alias
-
-No manual configuration is required to get started.
-
-## Publishing the Config (optional)
-
-If you want to customize the configuration, publish it to `config/carve.php`:
-
-```bash
-php artisan vendor:publish --tag=carve-config
-```
-
-## Verify Installation
-
-Add a simple test in any Blade view:
-
-```blade
-@carve('*Hello* /world/!')
-```
-
-This should render:
-
-```html
-<p><strong>Hello</strong> <em>world</em>!</p>
-```
-
-(Note the Carve emphasis syntax: `*bold*` and `/italic/` - see [Carve Syntax](carve-syntax.md).)
-
-## Next Steps
-
-- [Configuration](configuration.md) — customize converter behavior
-- [Blade Usage](blade-usage.md) — learn the available directives
-- [Carve Syntax](carve-syntax.md) — quick reference for Carve markup
+See the [migration guide](migration-02.md) for the current API and options.
