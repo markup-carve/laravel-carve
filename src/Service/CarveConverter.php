@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Service;
 
+use Composer\InstalledVersions;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use MarkupCarve\Carve2\Carve2;
@@ -59,7 +60,6 @@ class CarveConverter implements CarveConverterInterface
                 throw new InvalidArgumentException('carve.include_root must be an existing absolute directory.');
             }
             $this->includeRoot = rtrim($root, DIRECTORY_SEPARATOR) ?: '/';
-            $options['includes'] = FileResolver::forRoot($this->includeRoot);
         }
         $this->options = $options;
         $this->writers = Carve2::writers();
@@ -74,7 +74,8 @@ class CarveConverter implements CarveConverterInterface
             $state = '';
             $this->cache = null;
         }
-        $this->cacheSignature = hash('xxh3', Carve2::class . $state . $cacheVersion);
+        $engineRef = InstalledVersions::getReference('markup-carve/carve-php') ?? 'unknown';
+        $this->cacheSignature = hash('xxh3', Carve2::class . $engineRef . $state . $cacheVersion);
     }
 
     public function registerWriter(OutputWriter $writer): void
@@ -351,8 +352,22 @@ class CarveConverter implements CarveConverterInterface
     {
         $warnings = [];
         foreach ($diagnostics as $diagnostic) {
+            $warningSource = $source;
+            $identity = $diagnostic->file === null ? null : $this->containedIdentity($diagnostic->file);
+            if ($this->includeRoot !== null && $identity !== null && $identity !== self::OUTSIDE_ROOT) {
+                $candidate = realpath($this->includeRoot . '/' . $identity);
+                if (
+                    $candidate !== false && is_file($candidate)
+                    && str_starts_with($candidate, $this->includeRoot . '/')
+                ) {
+                    $included = file_get_contents($candidate);
+                    if ($included !== false) {
+                        $warningSource = $included;
+                    }
+                }
+            }
             $offset = max(0, $diagnostic->startOffset);
-            $prefix = substr($source, 0, $offset);
+            $prefix = substr($warningSource, 0, $offset);
             $line = substr_count($prefix, "\n") + 1;
             $previous = strrpos($prefix, "\n");
             $column = $offset - ($previous === false ? -1 : $previous);
@@ -360,7 +375,7 @@ class CarveConverter implements CarveConverterInterface
 
                 'rule' => $diagnostic->code,
                 'message' => $diagnostic->message,
-                'file' => $diagnostic->file === null ? null : $this->containedIdentity($diagnostic->file),
+                'file' => $identity,
                 'line' => $line,
                 'column' => $column,
             ];

@@ -50,7 +50,20 @@ class LintCommand extends Command
             $path = $includeRoot === null ? $file : ((string)realpath($file) ?: $file);
             foreach ($carve->lint($source, $includeRoot, $includeRoot === null ? null : $path) as $warning) {
                 $location = $warning->file ?? $path;
-                $before = substr($source, 0, max(0, $warning->startOffset));
+                $warningSource = $source;
+                if ($includeRoot !== null && $warning->file !== null) {
+                    $candidate = realpath($includeRoot . '/' . $warning->file);
+                    if (
+                        $candidate !== false && is_file($candidate)
+                        && str_starts_with($candidate, $includeRoot . '/')
+                    ) {
+                        $included = file_get_contents($candidate);
+                        if ($included !== false) {
+                            $warningSource = $included;
+                        }
+                    }
+                }
+                $before = substr($warningSource, 0, max(0, $warning->startOffset));
                 $line = substr_count($before, "\n") + 1;
                 $lastBreak = strrpos($before, "\n");
                 $column = strlen($before) - ($lastBreak === false ? -1 : $lastBreak);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Tests;
 
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 use MarkupCarve\Carve2\Carve2;
@@ -42,10 +44,15 @@ class Carve2PortTest extends TestCase
         file_put_contents($dir . '/main.crv', "{{ child.crv }}\n");
         file_put_contents($dir . '/child.crv', "*included*\n");
         try {
-            $converter = new CarveConverter(includeRoot: $dir);
+            $converter = new CarveConverter(includeRoot: $dir, cache: new Repository(new ArrayStore()));
+            self::assertStringContainsString('child.crv', $converter->toHtml('{{ child.crv }}'));
+            self::assertStringNotContainsString('included', $converter->toHtml('{{ child.crv }}'));
             $rendered = $converter->renderFile($dir . '/main.crv');
             self::assertStringContainsString('<strong>included</strong>', $rendered->html);
             self::assertSame([['path' => 'child.crv', 'resolved' => true]], $rendered->dependencies);
+            file_put_contents($dir . '/child.crv', '*changed*' . "\n");
+            self::assertStringContainsString('<strong>changed</strong>',
+                $converter->renderFile($dir . '/main.crv')->html);
         } finally {
             unlink($dir . '/main.crv');
             unlink($dir . '/child.crv');
