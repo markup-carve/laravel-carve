@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+
+- Port Laravel rendering, parsing, includes, lint, HTML import, formatting, validation, and result metadata to the commit-pinned Carve2 engine on next2.
+- Replace 0.1 safe mode and preset settings with Carve2 raw HTML, URL policy, and profile options.
+- Route text, Markdown, and ANSI output through the Carve2 writer registry. Missing writers report an availability error until registered.
+- Accept Carve2 extension definitions and providers, including the standard tabs and PlantUML shorthands. Former 0.1 extensions fail explicitly in the 0.2 path.
+- Keep Markdown input import visible with a clear unavailable error while the 0.2 importer API is pending.
+
+
 ## 0.1.10 - 2026-11-12
 
 ### Changed

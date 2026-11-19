@@ -4,135 +4,101 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Service;
 
+use Composer\InstalledVersions;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
-use MarkupCarve\Carve\CarveConverter as BaseCarveConverter;
-use MarkupCarve\Carve\Extension\FrontmatterExtension;
-use MarkupCarve\Carve\Extension\TableOfContentsExtension;
-use MarkupCarve\Carve\Node\Document;
-use MarkupCarve\Carve\Renderer\AnsiRenderer;
-use MarkupCarve\Carve\Renderer\MarkdownRenderer;
-use MarkupCarve\Carve\Renderer\PlainTextRenderer;
-use MarkupCarve\Carve\Renderer\RenderMode;
-use MarkupCarve\Carve\Renderer\SoftBreakMode;
-use MarkupCarve\Carve\SafeMode;
-use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
-use MarkupCarve\Carve\Transform\IncludeExpander;
+use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve2\Include\FileResolver;
+use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve2\Output\OutputWriter;
+use MarkupCarve\Carve2\Output\WriterRegistry;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Throwable;
 
 class CarveConverter implements CarveConverterInterface
 {
     /**
-     * Stand-in for an identity that names anything but a path inside the root.
-     *
      * @var string
      */
     public const OUTSIDE_ROOT = '[outside-root]';
 
-    private BaseCarveConverter $converter;
+    /**
+     * @var array<string, mixed>
+     */
+    private array $options;
 
-    private PlainTextRenderer $textRenderer;
+    private ?string $includeRoot = null;
+
+    private WriterRegistry $writers;
 
     private string $cacheSignature;
 
     /**
-     * Canonical containment root, or null while inclusion is disabled.
-     */
-    private ?string $includeRoot = null;
-
-    private ?FilesystemIncludeResolver $includeResolver = null;
-
-    /**
-     * @param \MarkupCarve\Carve\SafeMode|bool $safeMode
-     * @param string $mode Render mode: 'interactive' (default) or 'static'
-     *   (graceful degradation for print/email/PDF targets)
-     * @param string|null $softBreakMode
-     * @param bool $xhtml
-     * @param \Illuminate\Contracts\Cache\Repository|null $cache
-     * @param array<\MarkupCarve\Carve\Extension\ExtensionInterface> $extensions
-     * @param array<string, string> $symbols Trusted, unescaped HTML replacements for `:name:` symbols
-     * @param bool $sourceLines
-     * @param \Psr\Log\LoggerInterface|null $logger
+     * @param array<string, mixed> $options
      * @param string|null $cacheVersion
      * @param string $cachePrefix
      * @param int|null $cacheTtl
-     * @param array<string, string> $labels
-     * @param bool|null $smartTypography
-     * @param string|null $onDisallowed
-     * @param string|null $preset
+     * @param \Psr\Log\LoggerInterface|null $logger
      * @param string|null $includeRoot
-     *
-     * @throws \InvalidArgumentException
+     * @param \Illuminate\Contracts\Cache\Repository|null $cache
+     * @param list<\MarkupCarve\Carve2\Output\OutputWriter> $writers
      */
     public function __construct(
-        SafeMode|bool $safeMode = true,
-        string $mode = RenderMode::INTERACTIVE,
-        ?string $softBreakMode = null,
-        bool $xhtml = false,
+        array $options = [],
         private ?CacheRepository $cache = null,
-        array $extensions = [],
-        array $symbols = [],
-        bool $sourceLines = false,
         ?string $includeRoot = null,
         private ?LoggerInterface $logger = null,
-        ?string $preset = null,
-        ?string $onDisallowed = null,
-        ?bool $smartTypography = null,
-        array $labels = [],
         private ?int $cacheTtl = null,
         private string $cachePrefix = 'laravel_carve',
         ?string $cacheVersion = null,
+        array $writers = [],
     ) {
         if ($includeRoot !== null) {
-            // The resolver owns the rule that a configured root must be
-            // absolute, so a value it refuses never reaches a render. Naming
-            // the config key here is the only thing added.
-            try {
-                $this->includeResolver = new FilesystemIncludeResolver($includeRoot);
-            } catch (RuntimeException $exception) {
-                throw new InvalidArgumentException('carve.include_root: ' . $exception->getMessage(), 0, $exception);
+            if (!str_starts_with($includeRoot, '/')) {
+                throw new InvalidArgumentException('carve.include_root must be an existing absolute directory.');
             }
-            $this->includeRoot = rtrim((string)realpath($includeRoot), DIRECTORY_SEPARATOR);
+            $root = realpath($includeRoot);
+            if ($root === false || !is_dir($root) || !str_starts_with($root, '/')) {
+                throw new InvalidArgumentException('carve.include_root must be an existing absolute directory.');
+            }
+            $this->includeRoot = rtrim($root, DIRECTORY_SEPARATOR) ?: '/';
         }
-        $this->converter = new BaseCarveConverter(
-            xhtml: $xhtml,
-            safeMode: $safeMode,
-            mode: $mode,
-            softBreakMode: $softBreakMode !== null ? SoftBreakMode::from($softBreakMode) : null,
-            symbols: $symbols,
-            sourceLines: $sourceLines,
-            profile: RenderPolicy::preset($preset, $onDisallowed),
-            smartTypography: $smartTypography,
-            labels: $labels,
-        );
-        $this->textRenderer = new PlainTextRenderer();
-
-        foreach ($extensions as $extension) {
-            $this->converter->addExtension($extension);
+        $this->options = $options;
+        $this->writers = Carve2::writers();
+        foreach ($writers as $writer) {
+            $this->registerWriter($writer);
         }
-
-        if (!array_filter($extensions, static fn ($extension): bool => $extension instanceof TableOfContentsExtension)) {
-            $this->converter->addExtension(new TableOfContentsExtension());
-        }
-
-        // A signature must include extension options and engine changes. Extensions
-        // containing closures need an explicit application version to enable caching.
         try {
-            $extensionState = serialize($extensions);
+            $signatureOptions = $options;
+            unset($signatureOptions['includes']);
+            $state = serialize([$signatureOptions, $this->includeRoot]);
         } catch (Throwable) {
-            $extensionState = array_map(static fn ($extension): string => $extension::class, $extensions);
-            if ($cacheVersion === null) {
-                $this->cache = null;
-            }
+            $state = '';
+            $this->cache = null;
         }
-        $this->cacheSignature = hash('xxh3', serialize([
-            BaseCarveConverter::LIB_VERSION, $safeMode, $mode, $softBreakMode, $xhtml,
-            $symbols, $sourceLines, $preset, $onDisallowed, $smartTypography, $labels,
-            $includeRoot, $extensionState, $cacheVersion,
-        ]));
+        $engineRef = InstalledVersions::getReference('markup-carve/carve-php') ?? 'unknown';
+        $this->cacheSignature = hash('xxh3', Carve2::class . $engineRef . $state . $cacheVersion);
+    }
+
+    public function registerWriter(OutputWriter $writer): void
+    {
+        $this->writers->register($writer);
+        $this->cache = null;
+    }
+
+    public function setOption(string $name, mixed $value): void
+    {
+        $this->options[$name] = $value;
+        $this->cache = null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function options(): array
+    {
+        return $this->options;
     }
 
     public function toHtml(string $carve): string
@@ -142,51 +108,23 @@ class CarveConverter implements CarveConverterInterface
 
     public function render(string $carve): RenderedCarve
     {
-        $cacheKey = $this->cachePrefix . '_render_' . $this->cacheSignature . '_' . hash('xxh3', $carve);
-        $cached = $this->cache?->get($cacheKey);
+        $key = $this->cachePrefix . '_render_' . $this->cacheSignature . '_' . hash('xxh3', $carve);
+        $cached = $this->cache?->get($key);
         if ($cached instanceof RenderedCarve) {
             return $cached;
         }
-        $rendered = $this->renderDocument($carve, $this->converter->parse($carve));
-        $this->cache?->put($cacheKey, $rendered, $this->cacheTtl);
+        $result = Carve2::renderWithDiagnostics($carve, $this->options);
+        [$toc, $frontmatter] = $this->metadata(Carve2::parse($carve, $this->parseOptions()));
+        $rendered = new RenderedCarve(
+            $carve,
+            $result->html,
+            $toc,
+            $frontmatter,
+            warnings: $this->warnings($result->diagnostics, $carve),
+        );
+        $this->cache?->put($key, $rendered, $this->cacheTtl);
 
         return $rendered;
-    }
-
-    /**
-     * @param string $source
-     * @param \MarkupCarve\Carve\Node\Document $document
-     * @param list<array<string, mixed>> $warnings
-     * @param list<array{path: string, resolved: bool}> $dependencies
-     * @param int $suppressedWarnings
-     */
-    private function renderDocument(
-        string $source,
-        Document $document,
-        array $warnings = [],
-        array $dependencies = [],
-        int $suppressedWarnings = 0,
-    ): RenderedCarve {
-        $html = $this->converter->render($document);
-        $toc = [];
-        $frontmatter = null;
-        foreach ($this->converter->getExtensions() as $extension) {
-            if ($extension instanceof TableOfContentsExtension) {
-                $toc = $extension->getToc();
-            }
-            if ($extension instanceof FrontmatterExtension && $extension->hasFrontmatter()) {
-                $frontmatter = ['format' => (string)$extension->getFormat(), 'content' => (string)$extension->getContent()];
-            }
-        }
-
-        return new RenderedCarve($source, $html, $toc, $frontmatter, $warnings, $dependencies, $suppressedWarnings);
-    }
-
-    public function toText(string $carve): string
-    {
-        $document = $this->converter->parse($carve);
-
-        return $this->textRenderer->render($document);
     }
 
     public function toHtmlFile(string $path): string
@@ -199,6 +137,7 @@ class CarveConverter implements CarveConverterInterface
         $rendered = $this->renderFile($path);
 
         return [
+
             'value' => $rendered->html,
             'warnings' => $rendered->warnings,
             'dependencies' => $rendered->dependencies,
@@ -208,44 +147,42 @@ class CarveConverter implements CarveConverterInterface
 
     public function renderFile(string $path): RenderedCarve
     {
-        [$sourcePath, $source] = $this->readFile($path);
-        $root = $this->includeRoot;
-        if ($root === null || $this->includeResolver === null) {
-            return $this->render($source);
+        [$realPath, $source] = $this->readFile($path);
+        $options = $this->fileOptions($realPath);
+        $key = $this->cachePrefix . '_file_' . $this->cacheSignature . '_' . hash('xxh3', $realPath . $source);
+        $cached = $this->cache?->get($key);
+        if (
+            is_array($cached) && isset($cached['states'], $cached['rendered'])
+            && $cached['states'] === $this->dependencyStates(array_map(strval(...), array_keys($cached['states'])))
+        ) {
+            return $cached['rendered'];
         }
 
-        $cache = $this->cache;
-        $cacheKey = null;
-        if ($cache !== null) {
-            $cacheKey = $this->cachePrefix . '_file_' . $this->cacheSignature . '_' . hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
-            /** @var array{rendered: \MarkupCarve\LaravelCarve\RenderedCarve, states: array<string, string|null>}|null $cached */
-            $cached = $cache->get($cacheKey);
-            if ($cached !== null && $cached['states'] === $this->dependencyStates(array_keys($cached['states']), $root)) {
-                return $cached['rendered'];
-            }
+        $result = Carve2::renderWithDiagnostics($source, $options);
+        $parseOptions = $this->parseOptions($options);
+        $tree = Carve2::parse($source, $parseOptions);
+        $entries = $this->includeRoot === null ? [] : Carve2::includeDependencies($tree, $parseOptions);
+        $dependencies = [];
+        $targets = [];
+        foreach ($entries as $entry) {
+            $identity = $entry['file'] ?? $entry['path'];
+            $dependencies[] = ['path' => $this->containedIdentity($identity), 'resolved' => $entry['read']];
+            $targets[] = $this->dependencyPath($entry, $realPath);
         }
-
-        [$document, $expander] = $this->expandFile($sourcePath, $source);
-        $warnings = array_map(fn ($warning): array => [
-            'rule' => $warning->getRule(),
-            'message' => $warning->getMessage(),
-            'file' => $this->containedIdentity($warning->getFile(), $root),
-            'line' => $warning->getLine(),
-            'column' => $warning->getColumn(),
-        ], $expander->getWarnings());
-        $targets = array_map(static fn ($dependency): string => $dependency->getTarget(), $expander->getDependencies());
-        $dependencies = array_map(fn ($dependency): array => [
-            'path' => $this->containedIdentity($dependency->getTarget(), $root) ?? self::OUTSIDE_ROOT,
-            'resolved' => $dependency->isResolved(),
-        ], $expander->getDependencies());
+        $warnings = $this->warnings($result->diagnostics, $source, $realPath);
         foreach ($warnings as $warning) {
-            $this->logger?->warning('Carve include warning: {message}', $warning);
+            $this->logger?->warning('Carve diagnostic: {message}', $warning);
         }
-
-        $rendered = $this->renderDocument($source, $document, $warnings, $dependencies, $expander->getSuppressedWarnings());
-        if ($cache !== null) {
-            $cache->put($cacheKey, ['rendered' => $rendered, 'states' => $this->dependencyStates($targets, $root)], $this->cacheTtl);
-        }
+        [$toc, $frontmatter] = $this->metadata($tree);
+        $rendered = new RenderedCarve(
+            $source,
+            $result->html,
+            $toc,
+            $frontmatter,
+            warnings: $warnings,
+            dependencies: $dependencies,
+        );
+        $this->cache?->put($key, ['rendered' => $rendered, 'states' => $this->dependencyStates($targets)], $this->cacheTtl);
 
         return $rendered;
     }
@@ -265,8 +202,7 @@ class CarveConverter implements CarveConverterInterface
         if ($source === false) {
             throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
         }
-        $root = $this->includeRoot;
-        if ($root !== null && !str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)) {
+        if ($this->includeRoot !== null && !$this->insideRoot($realPath)) {
             throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
         }
 
@@ -274,25 +210,210 @@ class CarveConverter implements CarveConverterInterface
     }
 
     /**
-     * @throws \InvalidArgumentException
-     *
-     * @return array{\MarkupCarve\Carve\Node\Document, \MarkupCarve\Carve\Transform\IncludeExpander}
+     * @return array<string, mixed>
      */
-    private function expandFile(string $path, string $source): array
+    private function fileOptions(string $path): array
     {
-        $resolver = $this->includeResolver;
-        if ($resolver === null) {
-            throw new InvalidArgumentException('Carve include resolution is disabled.');
+        $options = $this->options;
+        if ($this->includeRoot !== null) {
+            $options['includes'] = ['resolver' => FileResolver::forRoot($this->includeRoot), 'file' => $path];
         }
-        $document = $this->converter->parse($source);
-        $expander = new IncludeExpander(
-            resolver: $resolver,
-            currentPath: $path,
-            source: $source,
-            extensions: $this->converter->getExtensions(),
-        );
 
-        return [$this->converter->transform($document, $expander), $expander];
+        return $options;
+    }
+
+    /**
+     * Only options consumed by parse and resolve may enter parse calls.
+     *
+     * @param array<string, mixed>|null $options
+     *
+     * @return array<string, mixed>
+     */
+    private function parseOptions(?array $options = null): array
+    {
+        $options ??= $this->options;
+
+        return array_intersect_key($options, array_flip([
+            'includes', 'extensions', 'headingIds',
+        ]));
+    }
+
+    /**
+     * @return array{list<array{level: int, text: string, html: string, id: string}>, array{format: string, content: string}|null}
+     */
+    private function metadata(Node $tree): array
+    {
+        $toc = [];
+        $frontmatter = null;
+        $stack = [$tree];
+        while ($stack !== []) {
+            $node = array_pop($stack);
+            if ($node->type === 'heading') {
+                $text = $this->nodeText($node);
+                $level = $node->f['level'] ?? 1;
+                $id = $node->f['generatedId'] ?? '';
+                $toc[] = [
+
+                    'level' => is_int($level) ? $level : 1,
+                    'text' => $text,
+                    'html' => $this->headingHtml($tree, $node, $text),
+                    'id' => is_string($id) ? $id : '',
+                ];
+            } elseif ($node->type === 'frontmatter') {
+                $format = $node->f['format'] ?? '';
+                $content = $node->f['value'] ?? '';
+                $frontmatter = [
+
+                    'format' => is_string($format) ? $format : '',
+                    'content' => is_string($content) ? $content : '',
+                ];
+            }
+            foreach (array_reverse($node->children ?? []) as $child) {
+                $stack[] = $child;
+            }
+        }
+
+        return [$toc, $frontmatter];
+    }
+
+    private function nodeText(Node $node): string
+    {
+        if ($node->type === 'text') {
+            $value = $node->f['value'] ?? '';
+
+            return is_string($value) ? $value : '';
+        }
+        $text = '';
+        foreach ($node->children ?? [] as $child) {
+            $text .= $this->nodeText($child);
+        }
+
+        return $text;
+    }
+
+    private function headingHtml(Node $tree, Node $heading, string $fallback): string
+    {
+        // Render the heading with the engine so every inline form follows the
+        // active profile and URL policy. A one-heading root avoids rescanning
+        // the rest of the document for each TOC entry.
+        $single = clone $tree;
+        $single->children = [$heading];
+        $options = $this->options;
+        $options['sections'] = false;
+        $html = Carve2::render($single, $options);
+        if (preg_match('~<h[1-6](?:\\s[^>]*)?>(.*?)</h[1-6]>~s', $html, $match) === 1) {
+            return $match[1];
+        }
+
+        return htmlspecialchars($fallback, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
+     * @param array{path: string, from: string|null, file: string|null, read: bool} $entry
+     * @param string $file
+     */
+    private function dependencyPath(array $entry, string $file): string
+    {
+        if ($this->includeRoot === null) {
+            return '';
+        }
+        if (is_string($entry['file'] ?? null)) {
+            return rtrim($this->includeRoot, '/') . '/' . $entry['file'];
+        }
+        if (str_starts_with($entry['path'], '/')) {
+            return $entry['path'];
+        }
+        $from = is_string($entry['from'] ?? null) ? $entry['from'] : $file;
+        $base = str_starts_with($from, '/') ? dirname($from) : rtrim($this->includeRoot, '/') . '/' . dirname($from);
+
+        return $base . '/' . $entry['path'];
+    }
+
+    /**
+     * @param list<string> $paths
+     *
+     * @return array<string, string|null>
+     */
+    private function dependencyStates(array $paths): array
+    {
+        $states = [];
+        foreach ($paths as $path) {
+            $real = realpath($path);
+            $inside = $real !== false && $this->insideRoot($real);
+            $states[$path] = $inside && is_file($real) ? (hash_file('xxh3', $real) ?: null) : null;
+        }
+
+        return $states;
+    }
+
+    private function containedIdentity(string $identity): string
+    {
+        if ($this->includeRoot === null) {
+            return $identity;
+        }
+        if ($this->includeRoot === '/' && str_starts_with($identity, '/')) {
+            return ltrim($identity, '/');
+        }
+        if (str_starts_with($identity, $this->includeRoot . '/')) {
+            return substr($identity, strlen($this->includeRoot) + 1);
+        }
+        if (str_starts_with($identity, '/') || in_array('..', explode('/', $identity), true)) {
+            return self::OUTSIDE_ROOT;
+        }
+
+        return $identity;
+    }
+
+    private function insideRoot(string $path): bool
+    {
+        return $this->includeRoot !== null && ($this->includeRoot === '/'
+            ? str_starts_with($path, '/')
+            : $path === $this->includeRoot || str_starts_with($path, $this->includeRoot . '/'));
+    }
+
+    /**
+     * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
+     * @param string $source
+     * @param string|null $sourcePath
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function warnings(array $diagnostics, string $source, ?string $sourcePath = null): array
+    {
+        $warnings = [];
+        foreach ($diagnostics as $diagnostic) {
+            $warningSource = $source;
+            $identity = $diagnostic->file === null
+                ? ($sourcePath === null ? null : $this->containedIdentity($sourcePath))
+                : $this->containedIdentity($diagnostic->file);
+            if ($this->includeRoot !== null && $identity !== null && $identity !== self::OUTSIDE_ROOT) {
+                $candidate = realpath(rtrim($this->includeRoot, '/') . '/' . $identity);
+                if (
+                    $candidate !== false && is_file($candidate)
+                    && $this->insideRoot($candidate)
+                ) {
+                    $included = file_get_contents($candidate);
+                    if ($included !== false) {
+                        $warningSource = $included;
+                    }
+                }
+            }
+            $offset = max(0, $diagnostic->startOffset);
+            $prefix = substr($warningSource, 0, $offset);
+            $line = substr_count($prefix, "\n") + 1;
+            $previous = strrpos($prefix, "\n");
+            $column = $offset - ($previous === false ? -1 : $previous);
+            $warnings[] = [
+
+                'rule' => $diagnostic->code,
+                'message' => $diagnostic->message,
+                'file' => $identity,
+                'line' => $line,
+                'column' => $column,
+            ];
+        }
+
+        return $warnings;
     }
 
     public function renderFileAs(string $path, string $format): string
@@ -301,88 +422,45 @@ class CarveConverter implements CarveConverterInterface
             return $this->renderFile($path)->html;
         }
         [$realPath, $source] = $this->readFile($path);
-        $document = $this->includeResolver === null
-            ? $this->converter->parse($source)
-            : $this->expandFile($realPath, $source)[0];
 
-        return match ($format) {
-            'text' => $this->textRenderer->render($document),
-            'markdown' => (new MarkdownRenderer())->render($document),
-            'ansi' => (new AnsiRenderer())->render($document),
-            default => throw new InvalidArgumentException('Unknown Carve output format.'),
-        };
+        return $this->writeTarget($format, $source, $this->fileOptions($realPath));
     }
 
-    /**
-     * Content hash per include target, or null where the target is absent or
-     * outside the root. A missing target keeps an entry on purpose: creating
-     * the file is what makes the directive start working, so it has to
-     * invalidate the entry.
-     *
-     * @param array<string> $targets
-     * @param string $root
-     *
-     * @return array<string, string|null>
-     */
-    private function dependencyStates(array $targets, string $root): array
+    public function toText(string $carve): string
     {
-        $states = [];
-        foreach ($targets as $target) {
-            $contained = $this->containedIdentity($target, $root);
-            $candidate = $contained === null || $contained === self::OUTSIDE_ROOT
-                ? null
-                : $root . DIRECTORY_SEPARATOR . $contained;
-            $states[$target] = $candidate !== null && is_file($candidate)
-                ? (hash_file('xxh3', $candidate) ?: null)
-                : null;
-        }
-
-        return $states;
-    }
-
-    /**
-     * The identity as a path relative to the root, or a fixed marker when it
-     * names anything else. A resolver message may embed an absolute path, and
-     * a denial keeps the directive's own spelling, so neither is reported.
-     */
-    private function containedIdentity(?string $identity, string $root): ?string
-    {
-        if ($identity === null) {
-            return null;
-        }
-        if (str_starts_with($identity, $root . DIRECTORY_SEPARATOR)) {
-            $identity = substr($identity, strlen($root) + 1);
-        } elseif (str_starts_with($identity, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $identity) === 1) {
-            return self::OUTSIDE_ROOT;
-        }
-        $identity = str_replace('\\', '/', $identity);
-
-        return in_array('..', explode('/', $identity), true) ? self::OUTSIDE_ROOT : $identity;
+        return $this->writeTarget('text', $carve);
     }
 
     public function toMarkdown(string $carve): string
     {
-        $document = $this->converter->parse($carve);
-
-        return (new MarkdownRenderer())->render($document);
+        return $this->writeTarget('markdown', $carve);
     }
 
     public function toAnsi(string $carve): string
     {
-        $document = $this->converter->parse($carve);
-
-        return (new AnsiRenderer())->render($document);
+        return $this->writeTarget('ansi', $carve);
     }
 
-    public function parse(string $carve): Document
+    /**
+     * @param string $format
+     * @param string $source
+     * @param array<string, mixed>|null $options
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function writeTarget(string $format, string $source, ?array $options = null): string
     {
-        return $this->converter->parse($carve);
+        if (!$this->writers->has($format)) {
+            throw new InvalidArgumentException(sprintf('Carve %s writer not available yet.', $format));
+        }
+        $options ??= $this->options;
+        $tree = Carve2::parse($source, $this->parseOptions($options));
+
+        return Carve2::writeTo($format, $tree, $options, $this->writers);
     }
 
-    public function getConverter(): BaseCarveConverter
+    public function parse(string $carve): Node
     {
-        $this->cache = null;
-
-        return $this->converter;
+        return Carve2::parse($carve, $this->parseOptions());
     }
 }

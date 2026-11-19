@@ -16,7 +16,8 @@ class CommandsTest extends TestCase
         file_put_contents($dir . '/child.crv', 'Included *text*');
         config()->set('carve.include_root', $dir);
         try {
-            foreach (['html', 'text', 'markdown', 'ansi'] as $format) {
+            // C2-T-005: only HTML is registered until the writers in issue 5235 arrive.
+            foreach (['html'] as $format) {
                 self::assertSame(0, Artisan::call('carve:render', ['path' => $dir . '/main.crv', '--format' => $format]));
                 self::assertStringContainsString('Included', Artisan::output());
                 self::assertStringNotContainsString('{{ child.crv }}', Artisan::output());
@@ -33,14 +34,20 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testPendingRenderCommandWriters(): void
+    {
+        self::markTestSkipped('Carve2 text, Markdown and ANSI command writers are pending carve-php issue 5235 (C2-T-005).');
+    }
+
     public function testConvertAndLintHaveUsefulExitStatuses(): void
     {
         $dir = sys_get_temp_dir() . '/carve-lint-' . bin2hex(random_bytes(6));
         mkdir($dir);
-        file_put_contents($dir . '/source.md', '**bold** and *italic*');
+        file_put_contents($dir . '/source.html', '<p><strong>bold</strong> and <em>italic</em></p>');
         file_put_contents($dir . '/bad.crv', '**bold**');
         try {
-            self::assertSame(0, Artisan::call('carve:convert', ['path' => $dir . '/source.md']));
+            // C2-T-003: HTML is the registered 0.2 importer.
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $dir . '/source.html']));
             self::assertStringContainsString('*bold* and /italic/', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir]]));
             self::assertStringContainsString('bad.crv:1:', Artisan::output());
@@ -55,6 +62,11 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testPendingMarkdownConvertCommand(): void
+    {
+        self::markTestSkipped('Carve2 Markdown import command is pending carve-php issue 5237 (C2-T-003).');
+    }
+
     public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void
     {
         $dir = sys_get_temp_dir() . '/carve-lint-include-' . bin2hex(random_bytes(6));
@@ -62,7 +74,9 @@ class CommandsTest extends TestCase
         file_put_contents($dir . '/main.crv', "# Main\n\n{{ child.crv }}\n");
         file_put_contents($dir . '/child.crv', "**bold**\n");
         try {
-            self::assertSame(0, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv']]));
+            // C2-N-085: lint reports a missing resolver for an unresolved include.
+            self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv']]));
+            self::assertStringContainsString('include-no-resolver', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir]));
             self::assertStringContainsString('child.crv:1:', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir . '/missing']));

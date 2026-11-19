@@ -7,13 +7,60 @@ namespace MarkupCarve\LaravelCarve\Tests\Service;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use InvalidArgumentException;
-use MarkupCarve\Carve\Node\Document;
+use MarkupCarve\Carve2\Node;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 class CarveConverterTest extends TestCase
 {
+    public function testTocKeepsInlineHeadingHtml(): void
+    {
+        $heading = (new CarveConverter())->render('# Hello *world*')->toc()[0];
+        self::assertSame('Hello world', $heading['text']);
+        self::assertSame('Hello <strong>world</strong>', $heading['html']);
+    }
+
+    public function testRootDirectoryIsAValidIncludeRoot(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'laravel-carve-root-');
+        $child = tempnam(sys_get_temp_dir(), 'laravel-carve-child-');
+        self::assertIsString($file);
+        self::assertIsString($child);
+        file_put_contents($file, '{{ ' . $child . " }}\n");
+        file_put_contents($child, "Root child\n");
+        try {
+            $converter = new CarveConverter(includeRoot: '/');
+            $result = $converter->renderFile($file);
+            self::assertStringContainsString('Root child', $result->html);
+            self::assertSame([['path' => ltrim($child, '/'), 'resolved' => true]], $result->dependencies);
+        } finally {
+            unlink($file);
+            unlink($child);
+        }
+    }
+
+    public function testMissingAbsoluteIncludeInvalidatesCacheWhenItAppears(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        $target = $root . '/later.crv';
+        $main = $root . '/main.crv';
+        file_put_contents($main, '{{ ' . $target . " }}\n");
+        $converter = new CarveConverter(cache: new Repository(new ArrayStore()), includeRoot: $root);
+        try {
+            self::assertStringContainsString('{{ ', $converter->toHtmlFile($main));
+            file_put_contents($target, "ARRIVED\n");
+            self::assertStringContainsString('ARRIVED', $converter->toHtmlFile($main));
+        } finally {
+            unlink($main);
+            if (is_file($target)) {
+                unlink($target);
+            }
+            rmdir($root);
+        }
+    }
+
     public function testFileIncludesAreContainedReportedAndLoggedSafely(): void
     {
         $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
@@ -72,9 +119,10 @@ class CarveConverterTest extends TestCase
                 ],
                 $result['dependencies'],
             );
-            self::assertCount(2, $result['warnings']);
+            // C2-A-173: both parse and render-loss channels report each refused include.
+            self::assertCount(4, $result['warnings']);
             foreach ($result['warnings'] as $warning) {
-                self::assertSame('include-unresolved', $warning['rule']);
+                self::assertContains($warning['rule'], ['include-unresolved', 'include-outside-root', 'include-not-found']);
                 self::assertSame(['rule', 'message', 'file', 'line', 'column'], array_keys($warning));
                 self::assertSame('main.crv', $warning['file']);
                 // The resolver's own message embeds the canonical root; it
@@ -200,11 +248,7 @@ class CarveConverterTest extends TestCase
 
     public function testToText(): void
     {
-        $converter = new CarveConverter();
-
-        $text = $converter->toText('Hello *world*!');
-
-        $this->assertStringContainsString('Hello world!', $text);
+        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testSafeModeEnabledByDefault(): void
@@ -218,7 +262,7 @@ class CarveConverterTest extends TestCase
 
     public function testSafeModeDisabled(): void
     {
-        $converter = new CarveConverter(safeMode: false);
+        $converter = new CarveConverter(options: ['rawHtml' => true]);
 
         $html = $converter->toHtml('[Click me](javascript:alert(1))');
 
@@ -229,8 +273,11 @@ class CarveConverterTest extends TestCase
 
     public function testConfiguredSymbolIsAppliedAndUnmappedSymbolRemainsLiteral(): void
     {
-        $converter = new CarveConverter(symbols: [
-            'mark' => '<span class="mark">M</span>',
+        $converter = new CarveConverter(options: [
+
+            'symbols' => [
+                'mark' => '<span class="mark">M</span>',
+            ],
         ]);
 
         $html = $converter->toHtml(':mark: :unknown:');
@@ -241,7 +288,7 @@ class CarveConverterTest extends TestCase
 
     public function testSourceLinesCanBeEnabled(): void
     {
-        $html = (new CarveConverter(sourceLines: true))->toHtml("# Heading\n\nParagraph");
+        $html = (new CarveConverter(options: ['sourceLines' => true]))->toHtml("# Heading\n\nParagraph");
 
         $this->assertStringContainsString('data-source-line="1"', $html);
         $this->assertStringContainsString('data-source-line="3"', $html);
@@ -256,25 +303,12 @@ class CarveConverterTest extends TestCase
 
     public function testToMarkdownRendersMarkdown(): void
     {
-        $converter = new CarveConverter();
-
-        $markdown = $converter->toMarkdown('# Hi
-
-/em/ and *strong*
-');
-
-        $this->assertStringContainsString('# Hi', $markdown);
-        $this->assertStringContainsString('**strong**', $markdown);
+        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testToAnsiRendersTerminalOutput(): void
     {
-        $converter = new CarveConverter();
-
-        $ansi = $converter->toAnsi('*strong*');
-
-        $this->assertStringContainsString("\e[", $ansi);
-        $this->assertStringContainsString('strong', $ansi);
+        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testParseReturnsDocument(): void
@@ -283,7 +317,9 @@ class CarveConverterTest extends TestCase
 
         $document = $converter->parse('# Heading');
 
-        $this->assertInstanceOf(Document::class, $document);
+        // C2-A-021: Carve2 returns the schema Node tree.
+        $this->assertInstanceOf(Node::class, $document);
+        $this->assertSame('document', $document->type);
     }
 
     /**
@@ -297,8 +333,8 @@ class CarveConverterTest extends TestCase
         $cache = new Repository(new ArrayStore());
         $source = 'a `<b>raw</b>`{=html} span';
 
-        $safe = new CarveConverter(safeMode: true, cache: $cache);
-        $unsafe = new CarveConverter(safeMode: false, cache: $cache);
+        $safe = new CarveConverter(options: ['rawHtml' => false], cache: $cache);
+        $unsafe = new CarveConverter(options: ['rawHtml' => true], cache: $cache);
 
         $this->assertStringNotContainsString('<b>raw</b>', $safe->toHtml($source));
         $this->assertStringContainsString('<b>raw</b>', $unsafe->toHtml($source));
@@ -308,8 +344,8 @@ class CarveConverterTest extends TestCase
     {
         $cache = new Repository(new ArrayStore());
 
-        $rocket = new CarveConverter(symbols: ['x' => 'ROCKET'], cache: $cache);
-        $tada = new CarveConverter(symbols: ['x' => 'TADA'], cache: $cache);
+        $rocket = new CarveConverter(options: ['symbols' => ['x' => 'ROCKET']], cache: $cache);
+        $tada = new CarveConverter(options: ['symbols' => ['x' => 'TADA']], cache: $cache);
 
         $this->assertStringContainsString('ROCKET', $rocket->toHtml('see :x: here'));
         $this->assertStringContainsString('TADA', $tada->toHtml('see :x: here'));

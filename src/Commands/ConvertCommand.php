@@ -6,6 +6,7 @@ namespace MarkupCarve\LaravelCarve\Commands;
 
 use Illuminate\Console\Command;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
+use Throwable;
 
 class ConvertCommand extends Command
 {
@@ -49,11 +50,17 @@ class ConvertCommand extends Command
             return self::FAILURE;
         }
 
-        $output = match ($from) {
-            'markdown' => $carve->fromMarkdown($source),
-            'html' => $carve->fromHtml($source),
-            default => null,
-        };
+        try {
+            $output = match ($from) {
+                'markdown' => $carve->fromMarkdown($source),
+                'html' => $carve->fromHtml($source),
+                default => null,
+            };
+        } catch (Throwable $exception) {
+            $this->components->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
 
         if ($output === null) {
             $this->components->error('Cannot tell the input format. Pass --from=markdown or --from=html.');

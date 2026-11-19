@@ -3,71 +3,33 @@
 declare(strict_types=1);
 
 return [
-
     'default' => 'default',
-
     'views' => ['enabled' => true, 'converter' => null],
 
-    // Absolute trusted root for explicit file-backed include rendering.
-    // Null keeps all include directives literal.
+    // Absolute root for file-backed includes. Null leaves includes unresolved.
     'include_root' => null,
 
-    /*
-    |--------------------------------------------------------------------------
-    | Converter Profiles
-    |--------------------------------------------------------------------------
-    |
-    | Define one or more converter profiles. Each profile is resolved as its
-    | own CarveConverter instance. The "default" profile is used when no name
-    | is explicitly passed to the facade, Blade directives or the manager.
-    |
-    */
-
     'converters' => [
-
-        'comment' => ['safe_mode' => 'strict', 'preset' => 'comment'],
-        'trusted' => ['safe_mode' => false],
-
         'default' => [
-            // XSS protection — disable only for trusted content
-            'safe_mode' => true,
-
-            // Render mode: 'interactive' (default) or 'static'. Static mode
-            // applies the spec's graceful-degradation rules for print, PDF,
-            // email and other script-free targets.
+            // Carve2 disables raw HTML by default and denies unsafe URL schemes.
+            'raw_html' => false,
+            'url_policy' => [],
+            'profile' => 'full',
             'mode' => 'interactive',
-
-            // How to render soft breaks: null, "newline", "space" or "br"
-            'soft_break_mode' => null,
-
-            // Output XHTML-compatible self-closing tags
-            'xhtml' => false,
-
-            // Trusted HTML replacements for :name: shortcodes. Values are
-            // inserted without escaping, so never populate this from user input.
-            'symbols' => [],
-
-            // Add 1-based data-source-line attributes for editor scroll-sync
+            'smart_typography' => true,
             'source_lines' => false,
-
-            // Carve extensions to enable for this profile. See docs/extensions.md.
+            'sections' => true,
+            'heading_ids' => 'keep-case',
+            'symbols' => [],
+            'labels' => [],
+            // ExtensionDefinition, ExtensionProvider, or the supported 'tabs' name.
             'extensions' => [],
+            // OutputWriter instances for targets such as text, markdown and ansi.
+            'writers' => [],
         ],
-
+        'comment' => ['profile' => 'comment', 'raw_html' => false],
+        'trusted' => ['raw_html' => true],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Caching
-    |--------------------------------------------------------------------------
-    |
-    | Enable caching of rendered HTML output. Cached entries are keyed by a
-    | hash of the source content so unchanged input is returned from cache.
-    |
-    | The "store" key refers to a cache store defined in config/cache.php.
-    | Use null to use the application's default cache store.
-    |
-    */
 
     'cache' => [
         'enabled' => false,
@@ -75,5 +37,4 @@ return [
         'ttl' => null,
         'prefix' => 'laravel_carve',
     ],
-
 ];

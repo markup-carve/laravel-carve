@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\Lint\DocumentLinter;
-use MarkupCarve\Carve\Lint\LintWarning;
+use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve2\Diagnostics\Diagnostic;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 class CarveManagerTest extends TestCase
 {
@@ -20,7 +19,7 @@ class CarveManagerTest extends TestCase
     {
         $this->manager = new CarveManager([
             'default' => new CarveConverter(),
-            'trusted' => new CarveConverter(safeMode: false),
+            'trusted' => new CarveConverter(options: ['rawHtml' => true]), // C2-M-066
         ]);
     }
 
@@ -48,9 +47,7 @@ class CarveManagerTest extends TestCase
 
     public function testToText(): void
     {
-        $text = $this->manager->toText('Hello *world*!');
-
-        $this->assertStringContainsString('Hello world!', $text);
+        self::markTestSkipped('Carve2 text writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testConverterAccessor(): void
@@ -75,7 +72,7 @@ class CarveManagerTest extends TestCase
     {
         $manager = $this->manager;
         $rules = static fn (string $source): array => array_map(
-            static fn (LintWarning $warning): string => $warning->rule,
+            static fn (Diagnostic $warning): string => $warning->code,
             $manager->lint($source),
         );
 
@@ -89,27 +86,31 @@ class CarveManagerTest extends TestCase
     {
         $table = "|= a |= bb |\n| ccc | d |\n";
 
-        self::assertSame("# T\n\ntext\n", $this->manager->format("# T\n\ntext  \n"));
+        // C2-W-100: the 0.2 writer uses its canonical heading marker.
+        self::assertSame("= T\n\ntext\n", $this->manager->format("# T\n\ntext  \n"));
         self::assertSame($table, $this->manager->format($table));
         self::assertSame("|= a  |= bb |\n| ccc | d   |\n", $this->manager->format($table, true));
     }
 
     public function testFormatRewritesRetiredSpellingsToTheCanonicalOnes(): void
     {
-        self::assertSame("|= a |= bb |\n| ccc | d |\n", $this->manager->format("| a | bb |\n|---|---|\n| ccc | d |\n"));
-        self::assertSame("|={<} a |={>} bb |\n| ccc | d |\n", $this->manager->format("|=< a |=> bb |\n| ccc | d |\n"));
-        self::assertSame("a\n\n***\n\nb\n", $this->manager->format("a\n\n---\n\nb\n"));
+        // U-055: the former GFM separator is a data row in 0.2.
+        self::assertSame("| a | bb |\n| --- | --- |\n| ccc | d |\n", $this->manager->format("| a | bb |\n|---|---|\n| ccc | d |\n"));
+        // U-056: glued alignment marks are plain cell text in 0.2.
+        self::assertSame("|= < a |= > bb |\n| ccc | d |\n", $this->manager->format("|=< a |=> bb |\n| ccc | d |\n"));
+        // U-044: a hyphen run is typography, not a thematic break.
+        self::assertSame("a\n\n---\n\nb\n", $this->manager->format("a\n\n---\n\nb\n"));
     }
 
     public function testLintReportsRetiredSpellingsAndHonorsSuppressionComments(): void
     {
         $manager = $this->manager;
         $rules = static fn (string $source): array => array_map(
-            static fn (LintWarning $warning): string => $warning->rule,
+            static fn (Diagnostic $warning): string => $warning->code,
             $manager->lint($source),
         );
 
-        self::assertSame(['deprecated-cell-alignment'], $rules("|=< a |= b |\n| 1 | 2 |\n"));
+        self::assertSame(['deprecated-cell-alignment'], $rules("|=< a |= b |\n| 1 | 2 |\n")); // U-056
         self::assertSame([], $rules("|={<} a |= b |\n| 1 | 2 |\n"));
         self::assertSame(['thematic-break-spelling'], $rules("a\n\n---\n\nb\n"));
         self::assertSame([], $rules("a\n\n%% carve-lint-disable-next-line thematic-break-spelling\n---\n\nb\n"));
@@ -125,47 +126,28 @@ class CarveManagerTest extends TestCase
 
     public function testFromMarkdownTurnsGitHubAlertsIntoAdmonitions(): void
     {
-        self::assertSame("::: note\nHello\n:::\n", $this->manager->fromMarkdown("> [!NOTE]\n> Hello\n"));
+        self::markTestSkipped('Carve2 Markdown import is pending carve-php issue 5237 (C2-T-003).');
     }
 
     public function testLintReportsTheRulesCarvePhp0114Added(): void
     {
         $manager = $this->manager;
         $rules = static fn (string $source): array => array_map(
-            static fn (LintWarning $warning): string => $warning->rule,
+            static fn (Diagnostic $warning): string => $warning->code,
             $manager->lint($source),
         );
 
-        self::assertContains('list-marker-below-content-column', $rules("9. a\n   - b\n10. c\n   - d\n"));
+        self::assertContains('list-item-body-below-content-column', $rules("9. a\n   - b\n10. c\n   - d\n"));
         self::assertContains('description-separator-below-content-column', $rules("- a\n  :: term\n: detail\n"));
-        self::assertContains('consumed-key-near-miss', $rules("{lose}\n- a\n- b\n"));
+        // C2-W-103: obsolete 0.1 rule is absent from the 0.2 catalog.
+        self::assertNotContains('consumed-key-near-miss', $rules("{lose}\n- a\n- b\n"));
         self::assertContains('unclosed-code-fence', $rules("```js\nx\n"));
     }
 
-    /**
-     * CarveManager::lint() delegates to the engine's DocumentLinter. Guard that
-     * the aggregate still covers every linter the installed engine ships, so a
-     * new linter missing from it shows up here instead of being skipped silently.
-     */
-    public function testLintCoversEveryLinterTheInstalledEngineShips(): void
+    public function testLintUsesTheCarve2RuleCatalog(): void
     {
-        $manager = (string)file_get_contents((string)(new ReflectionClass(CarveManager::class))->getFileName());
-        self::assertStringContainsString('new DocumentLinter()', $manager);
-
-        $aggregate = (string)file_get_contents((string)(new ReflectionClass(DocumentLinter::class))->getFileName());
-        $engineLintDir = dirname((string)(new ReflectionClass(LintWarning::class))->getFileName());
-        $shipped = [];
-        foreach ((array)glob($engineLintDir . '/*Linter.php') as $path) {
-            $shipped[] = basename((string)$path, '.php');
-        }
-        self::assertNotEmpty($shipped);
-
-        // IncludeLinter wraps DocumentLinter and needs an include resolver.
-        $missing = array_values(array_filter(
-            $shipped,
-            static fn (string $class): bool => !in_array($class, ['DocumentLinter', 'IncludeLinter'], true)
-                && !str_contains($aggregate, 'new ' . $class . '()'),
-        ));
-        self::assertSame([], $missing, 'DocumentLinter does not call: ' . implode(', ', $missing));
+        // C2-W-103: the public lint call owns the complete 0.2 catalog.
+        $source = "![alt][missing]\n";
+        self::assertEquals(Carve2::lint($source), $this->manager->lint($source));
     }
 }
