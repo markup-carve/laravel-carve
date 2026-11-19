@@ -41,7 +41,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/' },
-            { text: 'Migration to 0.2', link: '/guide/migration-02' },
+            { text: 'Migration to 0.2', link: '/guide/migration' },
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Configuration', link: '/guide/configuration' },
           ],
