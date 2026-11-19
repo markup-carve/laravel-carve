@@ -51,9 +51,7 @@ class LaravelCarveServiceProviderTest extends TestCase
 
     public function testFacadeToText(): void
     {
-        $text = Carve::toText('Hello *world*!');
-
-        $this->assertStringContainsString('Hello world!', $text);
+        self::markTestSkipped('Carve2 text writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testDefaultConfigHasSafeMode(): void
@@ -61,7 +59,8 @@ class LaravelCarveServiceProviderTest extends TestCase
         /** @var \Illuminate\Contracts\Config\Repository $config */
         $config = $this->app()->make(ConfigRepository::class);
 
-        $this->assertTrue($config->get('carve.converters.default.safe_mode'));
+        // C2-M-066: raw HTML is disabled by default in the 0.2 policy.
+        $this->assertFalse($config->get('carve.converters.default.raw_html'));
     }
 
     public function testDefaultConfigHasSymbolsAndSourceLines(): void
@@ -97,11 +96,12 @@ class LaravelCarveServiceProviderTest extends TestCase
         /** @var \Illuminate\Contracts\Config\Repository $config */
         $config = $this->app()->make(ConfigRepository::class);
         $config->set('carve.converters', [
-            'default' => ['safe_mode' => true],
-            'trusted' => ['safe_mode' => false],
+            // C2-M-066 and C2-X-039: 0.2 uses raw_html and the tabs registry.
+            'default' => ['raw_html' => false],
+            'trusted' => ['raw_html' => true],
             'docs' => [
-                'safe_mode' => false,
-                'extensions' => ['autolink', 'smart_quotes'],
+                'raw_html' => false,
+                'extensions' => ['tabs'],
             ],
         ]);
         $this->app()->forgetInstance(CarveManager::class);

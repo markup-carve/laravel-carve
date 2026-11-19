@@ -50,6 +50,9 @@ class LintCommand extends Command
             $path = $includeRoot === null ? $file : ((string)realpath($file) ?: $file);
             foreach ($carve->lint($source, $includeRoot, $includeRoot === null ? null : $path) as $warning) {
                 $location = $warning->file ?? $path;
+                if ($includeRoot !== null && $warning->file !== null) {
+                    $location = $includeRoot . '/' . $warning->file;
+                }
                 $warningSource = $source;
                 if ($includeRoot !== null && $warning->file !== null) {
                     $candidate = realpath($includeRoot . '/' . $warning->file);

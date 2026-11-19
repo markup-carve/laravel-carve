@@ -68,7 +68,7 @@ A host may provide an OutputWriter instance in a profile's writers list or call 
 
 ## Extensions
 
-A profile's extensions list accepts Carve2 ExtensionDefinition or ExtensionProvider objects. The tabs shorthand registers the standard Carve2 tabs definitions. Other old 0.1 extension names and classes cannot be passed into the 0.2 engine. They fail explicitly so no 0.1 behavior enters the 0.2 path. Several former extensions are now core Carve 0.2 syntax; review source and settings before removing a registration. Document transform and build-time or inline renderer hooks are still pending the engine's provisional extension API.
+A profile's extensions list accepts Carve2 ExtensionDefinition or ExtensionProvider objects. The tabs shorthand registers the standard Carve2 tabs definitions. The plantuml shorthand registers fenced renderers for both `plantuml` and `puml`, with an optional `css_class` for a single CSS class. Other old 0.1 extension names and classes cannot be passed into the 0.2 engine. They fail explicitly so no 0.1 behavior enters the 0.2 path. Several former extensions are now core Carve 0.2 syntax; review source and settings before removing a registration. Document transform and build-time or inline renderer hooks are still pending the engine's provisional extension API.
 
 ## Cache and result data
 

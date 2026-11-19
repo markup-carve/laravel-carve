@@ -55,6 +55,9 @@ class CarveConverter implements CarveConverterInterface
         array $writers = [],
     ) {
         if ($includeRoot !== null) {
+            if (!str_starts_with($includeRoot, '/')) {
+                throw new InvalidArgumentException('carve.include_root must be an existing absolute directory.');
+            }
             $root = realpath($includeRoot);
             if ($root === false || !is_dir($root) || !str_starts_with($root, '/')) {
                 throw new InvalidArgumentException('carve.include_root must be an existing absolute directory.');
@@ -166,7 +169,7 @@ class CarveConverter implements CarveConverterInterface
             $dependencies[] = ['path' => $this->containedIdentity($identity), 'resolved' => $entry['read']];
             $targets[] = $this->dependencyPath($entry, $realPath);
         }
-        $warnings = $this->warnings($result->diagnostics, $source);
+        $warnings = $this->warnings($result->diagnostics, $source, $realPath);
         foreach ($warnings as $warning) {
             $this->logger?->warning('Carve diagnostic: {message}', $warning);
         }
@@ -345,15 +348,18 @@ class CarveConverter implements CarveConverterInterface
     /**
      * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
      * @param string $source
+     * @param string|null $sourcePath
      *
      * @return list<array<string, mixed>>
      */
-    private function warnings(array $diagnostics, string $source): array
+    private function warnings(array $diagnostics, string $source, ?string $sourcePath = null): array
     {
         $warnings = [];
         foreach ($diagnostics as $diagnostic) {
             $warningSource = $source;
-            $identity = $diagnostic->file === null ? null : $this->containedIdentity($diagnostic->file);
+            $identity = $diagnostic->file === null
+                ? ($sourcePath === null ? null : $this->containedIdentity($sourcePath))
+                : $this->containedIdentity($diagnostic->file);
             if ($this->includeRoot !== null && $identity !== null && $identity !== self::OUTSIDE_ROOT) {
                 $candidate = realpath($this->includeRoot . '/' . $identity);
                 if (

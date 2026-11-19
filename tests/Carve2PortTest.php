@@ -51,8 +51,10 @@ class Carve2PortTest extends TestCase
             self::assertStringContainsString('<strong>included</strong>', $rendered->html);
             self::assertSame([['path' => 'child.crv', 'resolved' => true]], $rendered->dependencies);
             file_put_contents($dir . '/child.crv', '*changed*' . "\n");
-            self::assertStringContainsString('<strong>changed</strong>',
-                $converter->renderFile($dir . '/main.crv')->html);
+            self::assertStringContainsString(
+                '<strong>changed</strong>',
+                $converter->renderFile($dir . '/main.crv')->html,
+            );
         } finally {
             unlink($dir . '/main.crv');
             unlink($dir . '/child.crv');
@@ -63,24 +65,37 @@ class Carve2PortTest extends TestCase
     public function testLintHtmlImportAndFormatUseCarve2(): void
     {
         self::assertSame(Carve2::lint('**old**')[0]->code, Carve::lint('**old**')[0]->code);
-        self::assertSame(Carve2::importHtml('<p><em>italic</em></p>')->source,
-            Carve::fromHtml('<p><em>italic</em></p>'));
+        self::assertSame(
+            Carve2::importHtml('<p><em>italic</em></p>')->source,
+            Carve::fromHtml('<p><em>italic</em></p>'),
+        );
         self::assertSame(Carve2::format("a  \nb\n"), Carve::format("a  \nb\n"));
     }
 
     public function testValidationUsesCarve2ProfileAndLint(): void
     {
-        self::assertFalse(Validator::make(['body' => '# Heading'],
-            ['body' => ValidCarve::preset('comment')])->passes());
-        self::assertFalse(Validator::make(['body' => '**old**'],
-            ['body' => (new ValidCarve())->lint()])->passes());
+        self::assertFalse(Validator::make(
+            ['body' => '# Heading'],
+            ['body' => ValidCarve::preset('comment')],
+        )->passes());
+        self::assertFalse(Validator::make(
+            ['body' => '**old**'],
+            ['body' => (new ValidCarve())->lint()],
+        )->passes());
     }
 
     public function testWriterRegistryCanProvideAHostTarget(): void
     {
         $writer = new class implements OutputWriter {
-            public function target(): string { return 'text'; }
-            public function write(Node $tree, array $options = []): string { return 'from v2 tree'; }
+            public function target(): string
+            {
+                return 'text';
+            }
+
+            public function write(Node $tree, array $options = []): string
+            {
+                return 'from v2 tree';
+            }
         };
         $converter = new CarveConverter(writers: [$writer]);
         self::assertSame('from v2 tree', $converter->toText('hello'));
