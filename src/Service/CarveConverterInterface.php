@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Service;
 
-use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve\Node;
 
 interface CarveConverterInterface
 {

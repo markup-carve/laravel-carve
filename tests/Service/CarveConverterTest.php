@@ -7,7 +7,7 @@ namespace MarkupCarve\LaravelCarve\Tests\Service;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve\Node;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -248,7 +248,7 @@ class CarveConverterTest extends TestCase
 
     public function testToText(): void
     {
-        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testSafeModeEnabledByDefault(): void
@@ -303,12 +303,12 @@ class CarveConverterTest extends TestCase
 
     public function testToMarkdownRendersMarkdown(): void
     {
-        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testToAnsiRendersTerminalOutput(): void
     {
-        self::markTestSkipped('Carve2 output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testParseReturnsDocument(): void
@@ -317,7 +317,7 @@ class CarveConverterTest extends TestCase
 
         $document = $converter->parse('# Heading');
 
-        // C2-A-021: Carve2 returns the schema Node tree.
+        // C2-A-021: Carve returns the schema Node tree.
         $this->assertInstanceOf(Node::class, $document);
         $this->assertSame('document', $document->type);
     }

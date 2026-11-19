@@ -8,23 +8,23 @@ use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Node;
-use MarkupCarve\Carve2\Output\OutputWriter;
+use MarkupCarve\Carve\Carve as Engine;
+use MarkupCarve\Carve\Node;
+use MarkupCarve\Carve\Output\OutputWriter;
 use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\Rules\ValidCarve;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 
-class Carve2PortTest extends TestCase
+class CarvePortTest extends TestCase
 {
-    public function testHtmlParseAndMetadataUseCarve2(): void
+    public function testHtmlParseAndMetadataUseCarve(): void
     {
         $source = "---json\n{\"title\":\"Page\"}\n---\n\n# Page\n";
         $result = Carve::render($source);
         self::assertSame('Page', $result->meta('title'));
         self::assertSame('Page', $result->toc()[0]['text']);
-        self::assertSame(Carve2::render($source), $result->html);
+        self::assertSame(Engine::render($source), $result->html);
         self::assertInstanceOf(Node::class, Carve::parse($source));
     }
 
@@ -39,7 +39,7 @@ class Carve2PortTest extends TestCase
 
     public function testFileIncludesAndDependencyReport(): void
     {
-        $dir = sys_get_temp_dir() . '/laravel-carve2-' . bin2hex(random_bytes(6));
+        $dir = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
         mkdir($dir);
         file_put_contents($dir . '/main.crv', "{{ child.crv }}\n");
         file_put_contents($dir . '/child.crv', "*included*\n");
@@ -62,17 +62,17 @@ class Carve2PortTest extends TestCase
         }
     }
 
-    public function testLintHtmlImportAndFormatUseCarve2(): void
+    public function testLintHtmlImportAndFormatUseCarve(): void
     {
-        self::assertSame(Carve2::lint('**old**')[0]->code, Carve::lint('**old**')[0]->code);
+        self::assertSame(Engine::lint('**old**')[0]->code, Carve::lint('**old**')[0]->code);
         self::assertSame(
-            Carve2::importHtml('<p><em>italic</em></p>')->source,
+            Engine::importHtml('<p><em>italic</em></p>')->source,
             Carve::fromHtml('<p><em>italic</em></p>'),
         );
-        self::assertSame(Carve2::format("a  \nb\n"), Carve::format("a  \nb\n"));
+        self::assertSame(Engine::format("a  \nb\n"), Carve::format("a  \nb\n"));
     }
 
-    public function testValidationUsesCarve2ProfileAndLint(): void
+    public function testValidationUsesCarveProfileAndLint(): void
     {
         self::assertFalse(Validator::make(
             ['body' => '# Heading'],
@@ -94,16 +94,16 @@ class Carve2PortTest extends TestCase
 
             public function write(Node $tree, array $options = []): string
             {
-                return 'from v2 tree';
+                return 'from Carve tree';
             }
         };
         $converter = new CarveConverter(writers: [$writer]);
-        self::assertSame('from v2 tree', $converter->toText('hello'));
+        self::assertSame('from Carve tree', $converter->toText('hello'));
         $manager = new CarveManager(['default' => $converter]);
-        self::assertSame('from v2 tree', $manager->toText('hello'));
+        self::assertSame('from Carve tree', $manager->toText('hello'));
     }
 
-    public function testTabsRegistrationUsesCarve2Definitions(): void
+    public function testTabsRegistrationUsesCarveDefinitions(): void
     {
         config()->set('carve.converters.default.extensions', ['tabs']);
         app()->forgetInstance(CarveManager::class);
@@ -129,7 +129,7 @@ class Carve2PortTest extends TestCase
         app()->forgetInstance(CarveManager::class);
         Carve::clearResolvedInstances();
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown Carve2 profile setting "souce_lines".');
+        $this->expectExceptionMessage('Unknown Carve profile setting "souce_lines".');
         Carve::toHtml('text');
     }
 
@@ -142,11 +142,11 @@ class Carve2PortTest extends TestCase
 
     public function testMarkdownTextAndAnsiWritersPendingEngineRegistration(): void
     {
-        self::markTestSkipped('Carve2 markdown, text and ansi writers are pending carve-php issue 5235.');
+        self::markTestSkipped('Carve markdown, text and ansi writers are pending carve-php issue 5235.');
     }
 
     public function testDocumentTransformExtensionPendingEngineApi(): void
     {
-        self::markTestSkipped('Carve2 document transform extension hook is pending the D4 engine API.');
+        self::markTestSkipped('Carve document transform extension hook is pending the D4 engine API.');
     }
 }

@@ -7,11 +7,11 @@ namespace MarkupCarve\LaravelCarve\Service;
 use Composer\InstalledVersions;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Include\FileResolver;
-use MarkupCarve\Carve2\Node;
-use MarkupCarve\Carve2\Output\OutputWriter;
-use MarkupCarve\Carve2\Output\WriterRegistry;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Include\FileResolver;
+use MarkupCarve\Carve\Node;
+use MarkupCarve\Carve\Output\OutputWriter;
+use MarkupCarve\Carve\Output\WriterRegistry;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,7 +42,7 @@ class CarveConverter implements CarveConverterInterface
      * @param \Psr\Log\LoggerInterface|null $logger
      * @param string|null $includeRoot
      * @param \Illuminate\Contracts\Cache\Repository|null $cache
-     * @param list<\MarkupCarve\Carve2\Output\OutputWriter> $writers
+     * @param list<\MarkupCarve\Carve\Output\OutputWriter> $writers
      */
     public function __construct(
         array $options = [],
@@ -65,7 +65,7 @@ class CarveConverter implements CarveConverterInterface
             $this->includeRoot = rtrim($root, DIRECTORY_SEPARATOR) ?: '/';
         }
         $this->options = $options;
-        $this->writers = Carve2::writers();
+        $this->writers = Carve::writers();
         foreach ($writers as $writer) {
             $this->registerWriter($writer);
         }
@@ -78,7 +78,7 @@ class CarveConverter implements CarveConverterInterface
             $this->cache = null;
         }
         $engineRef = InstalledVersions::getReference('markup-carve/carve-php') ?? 'unknown';
-        $this->cacheSignature = hash('xxh3', Carve2::class . $engineRef . $state . $cacheVersion);
+        $this->cacheSignature = hash('xxh3', Carve::class . $engineRef . $state . $cacheVersion);
     }
 
     public function registerWriter(OutputWriter $writer): void
@@ -113,8 +113,8 @@ class CarveConverter implements CarveConverterInterface
         if ($cached instanceof RenderedCarve) {
             return $cached;
         }
-        $result = Carve2::renderWithDiagnostics($carve, $this->options);
-        [$toc, $frontmatter] = $this->metadata(Carve2::parse($carve, $this->parseOptions()));
+        $result = Carve::renderWithDiagnostics($carve, $this->options);
+        [$toc, $frontmatter] = $this->metadata(Carve::parse($carve, $this->parseOptions()));
         $rendered = new RenderedCarve(
             $carve,
             $result->html,
@@ -158,10 +158,10 @@ class CarveConverter implements CarveConverterInterface
             return $cached['rendered'];
         }
 
-        $result = Carve2::renderWithDiagnostics($source, $options);
+        $result = Carve::renderWithDiagnostics($source, $options);
         $parseOptions = $this->parseOptions($options);
-        $tree = Carve2::parse($source, $parseOptions);
-        $entries = $this->includeRoot === null ? [] : Carve2::includeDependencies($tree, $parseOptions);
+        $tree = Carve::parse($source, $parseOptions);
+        $entries = $this->includeRoot === null ? [] : Carve::includeDependencies($tree, $parseOptions);
         $dependencies = [];
         $targets = [];
         foreach ($entries as $entry) {
@@ -300,7 +300,7 @@ class CarveConverter implements CarveConverterInterface
         $single->children = [$heading];
         $options = $this->options;
         $options['sections'] = false;
-        $html = Carve2::render($single, $options);
+        $html = Carve::render($single, $options);
         if (preg_match('~<h[1-6](?:\\s[^>]*)?>(.*?)</h[1-6]>~s', $html, $match) === 1) {
             return $match[1];
         }
@@ -372,7 +372,7 @@ class CarveConverter implements CarveConverterInterface
     }
 
     /**
-     * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
+     * @param array<\MarkupCarve\Carve\Diagnostics\Diagnostic> $diagnostics
      * @param string $source
      * @param string|null $sourcePath
      *
@@ -454,13 +454,13 @@ class CarveConverter implements CarveConverterInterface
             throw new InvalidArgumentException(sprintf('Carve %s writer not available yet.', $format));
         }
         $options ??= $this->options;
-        $tree = Carve2::parse($source, $this->parseOptions($options));
+        $tree = Carve::parse($source, $this->parseOptions($options));
 
-        return Carve2::writeTo($format, $tree, $options, $this->writers);
+        return Carve::writeTo($format, $tree, $options, $this->writers);
     }
 
     public function parse(string $carve): Node
     {
-        return Carve2::parse($carve, $this->parseOptions());
+        return Carve::parse($carve, $this->parseOptions());
     }
 }

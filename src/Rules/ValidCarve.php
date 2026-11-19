@@ -7,8 +7,8 @@ namespace MarkupCarve\LaravelCarve\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2 as Engine;
-use MarkupCarve\Carve2\CarveException;
+use MarkupCarve\Carve\Carve as Engine;
+use MarkupCarve\Carve\CarveException;
 use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\Service\RenderPolicy;
 

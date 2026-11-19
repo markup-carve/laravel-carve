@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Breaking
+
+- Rename the Carve 0.2 engine imports to `MarkupCarve\Carve\Carve` and pin the renamed engine at `db1624daf9`. Remove temporary `Carve2` names and 0.1 code paths.
+- Remove the 0.1 docs grammar dependency; code blocks use the built-in plain-text fallback until a 0.2 grammar is available.
+
 ### Changed
 
 - Port Laravel rendering, parsing, includes, lint, HTML import, formatting, validation, and result metadata to the commit-pinned Carve2 engine on next2.

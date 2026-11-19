@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Service;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Extension\Claim;
-use MarkupCarve\Carve2\Extension\ExtensionDefinition;
-use MarkupCarve\Carve2\Extension\ExtensionProvider;
-use MarkupCarve\Carve2\Extension\RenderHost;
-use MarkupCarve\Carve2\Extension\Tabs;
-use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve\Extension\Claim;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Extension\Tabs;
+use MarkupCarve\Carve\Node;
 
 class ExtensionFactory
 {
     /**
-     * @param \MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider|array<mixed, mixed>|string $config
+     * @param \MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider|array<mixed, mixed>|string $config
      *
      * @throws \InvalidArgumentException
      *
-     * @return list<\MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider>
+     * @return list<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
     public function create(ExtensionDefinition|ExtensionProvider|array|string $config): array
     {

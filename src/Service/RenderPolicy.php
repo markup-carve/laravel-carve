@@ -32,7 +32,7 @@ final class RenderPolicy
         foreach (['safe_mode', 'preset', 'on_disallowed', 'soft_break_mode', 'xhtml'] as $oldName) {
             if (array_key_exists($oldName, $config)) {
                 throw new InvalidArgumentException(sprintf(
-                    'Carve 0.1 option "%s" has no direct Carve2 mapping; update this profile.',
+                    'Carve 0.1 option "%s" has no direct Carve mapping; update this profile.',
                     $oldName,
                 ));
             }
@@ -57,7 +57,7 @@ final class RenderPolicy
                 !array_key_exists($key, $names)
                 && !in_array($key, ['extensions', 'writers', 'cache_version'], true)
             ) {
-                throw new InvalidArgumentException(sprintf('Unknown Carve2 profile setting "%s".', $key));
+                throw new InvalidArgumentException(sprintf('Unknown Carve profile setting "%s".', $key));
             }
         }
         $options = [];

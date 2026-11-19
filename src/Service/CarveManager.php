@@ -6,9 +6,9 @@ namespace MarkupCarve\LaravelCarve\Service;
 
 use Closure;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Include\FileResolver;
-use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Include\FileResolver;
+use MarkupCarve\Carve\Node;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 
 class CarveManager
@@ -189,7 +189,7 @@ class CarveManager
 
     public function fromHtml(string $source): string
     {
-        return Carve2::importDocument($source, ['from' => 'html'])->source;
+        return Carve::importDocument($source, ['from' => 'html'])->source;
     }
 
     /**
@@ -197,14 +197,14 @@ class CarveManager
      */
     public function format(string $source, bool $alignTables = false): string
     {
-        return Carve2::format($source, ['alignTables' => $alignTables]);
+        return Carve::format($source, ['alignTables' => $alignTables]);
     }
 
     /**
      * With an include root, included files are linted too and their findings
      * carry `file` and `includedBy`.
      *
-     * @return list<\MarkupCarve\Carve2\Diagnostics\Diagnostic>
+     * @return list<\MarkupCarve\Carve\Diagnostics\Diagnostic>
      */
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
@@ -216,7 +216,7 @@ class CarveManager
             ],
         ];
 
-        return array_values(Carve2::lint($source, $options));
+        return array_values(Carve::lint($source, $options));
     }
 
     private function getConverter(?string $name): CarveConverterInterface
