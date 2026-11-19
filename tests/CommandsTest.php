@@ -36,7 +36,7 @@ class CommandsTest extends TestCase
 
     public function testPendingRenderCommandWriters(): void
     {
-        self::markTestSkipped('Carve2 text, Markdown and ANSI command writers are pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve text, Markdown and ANSI command writers are pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testConvertAndLintHaveUsefulExitStatuses(): void
@@ -64,7 +64,7 @@ class CommandsTest extends TestCase
 
     public function testPendingMarkdownConvertCommand(): void
     {
-        self::markTestSkipped('Carve2 Markdown import command is pending carve-php issue 5237 (C2-T-003).');
+        self::markTestSkipped('Carve Markdown import command is pending carve-php issue 5237 (C2-T-003).');
     }
 
     public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void

@@ -14,7 +14,7 @@ class AuthoringConverterTest extends TestCase
 {
     public function testCacheSeparatesExtensionOptionsAndVersions(): void
     {
-        self::markTestSkipped('Carve2 document transform extensions are pending carve-php issue 5238 (D4).');
+        self::markTestSkipped('Carve document transform extensions are pending carve-php issue 5238 (D4).');
     }
 
     public function testCachePreservesMetadataAndRespectsTtlAndPrefix(): void
@@ -59,12 +59,12 @@ class AuthoringConverterTest extends TestCase
 
     public function testClosureExtensionsDoNotCollideWithoutExplicitVersion(): void
     {
-        self::markTestSkipped('Carve2 document transform extensions are pending carve-php issue 5238 (D4).');
+        self::markTestSkipped('Carve document transform extensions are pending carve-php issue 5238 (D4).');
     }
 
     public function testPendingFileOutputWriters(): void
     {
-        self::markTestSkipped('Carve2 file output writers are pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve file output writers are pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testFileResultKeepsDiagnosticsMetadataAndDependencyInvalidation(): void

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Extension\Claim;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Node;
 use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -24,7 +27,7 @@ class ExtensionFactoryTest extends TestCase
         // C2-X-039: tabs are the standard named extension definitions in 0.2.
         self::assertCount(2, $this->factory->create('tabs'));
         // C2-X-057: explicit autolinks are core syntax, so they need no extension registration.
-        self::assertStringContainsString('href="https://example.test"', Carve2::render('<https://example.test>'));
+        self::assertStringContainsString('href="https://example.test"', Carve::render('<https://example.test>'));
     }
 
     public function testArrayConfigCreatesExtension(): void
@@ -35,9 +38,26 @@ class ExtensionFactoryTest extends TestCase
         $this->factory->create(['type' => 'tabs', 'misspelled_option' => true]);
     }
 
-    public function testSemanticSpanHasNoOptions(): void
+    public function testInlineRendererRunsThroughHostFactory(): void
     {
-        self::markTestSkipped('Custom inline extension rendering is pending carve-php issue 5232 (C2-X-033).');
+        $definition = new ExtensionDefinition(
+            'host.embed',
+            '1',
+            matcher: ['form' => 'inline', 'name' => 'embed'],
+            transform: static function (Claim $claim): Node {
+                $node = new Node('inline_extension', []);
+                $node->f['name'] = 'host.embed';
+                $node->f['version'] = '1';
+                $node->f['fallback'] = $claim->node->children ?? [];
+
+                return $node;
+            },
+            renderer: static fn (Node $node, RenderHost $host): string => '<b>handled</b>',
+        );
+        self::assertStringContainsString(
+            '<b>handled</b>',
+            Carve::render('Watch :embed[abc].', ['extensions' => $this->factory->create($definition)]),
+        );
     }
 
     public function testUnknownTypeReturnsNull(): void
@@ -64,11 +84,6 @@ class ExtensionFactoryTest extends TestCase
         }
     }
 
-    public function testEveryBundledCarvePhpExtensionHasAType(): void
-    {
-        self::markTestSkipped('The 0.1 bundled extension catalog has no 0.2 parity yet: carve-php issues 5232 and 5238 (C2-X-033, D4).');
-    }
-
     public function testTypesAreUniqueAndSorted(): void
     {
         // C2-X-001: each 0.2 definition has a unique qualified name.
@@ -83,21 +98,6 @@ class ExtensionFactoryTest extends TestCase
     public function testExternalLinksAcceptsOptions(): void
     {
         self::markTestSkipped('External link document transform is pending carve-php issue 5238 (D4).');
-    }
-
-    public function testMentionsAcceptsOptions(): void
-    {
-        self::markTestSkipped('Custom mention inline rendering is pending carve-php issue 5232 (C2-X-033).');
-    }
-
-    public function testWikilinksWithUrlTemplate(): void
-    {
-        self::markTestSkipped('Custom wiki link inline rendering is pending carve-php issue 5232 (C2-X-033).');
-    }
-
-    public function testWikilinksWithoutUrlTemplate(): void
-    {
-        self::markTestSkipped('Wiki link shorthand extension is pending carve-php issue 5232 (C2-X-033).');
     }
 
     public function testPlantumlShorthandIsAFencedRenderExtension(): void
@@ -115,7 +115,7 @@ class ExtensionFactoryTest extends TestCase
 
     public function testPlantumlShorthandRendersPlantumlBlock(): void
     {
-        $html = Carve2::render("```plantuml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
+        $html = Carve::render("```plantuml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
         // C2-X-034: the trusted host renderer escapes code text in its HTML.
         self::assertStringContainsString('<pre class="plantuml">A -&gt; B', $html);
     }
@@ -123,14 +123,14 @@ class ExtensionFactoryTest extends TestCase
     public function testPumlLanguageAlsoRendersPlantumlBlock(): void
     {
         // C2-X-005: the alias is a second matcher with the same host renderer.
-        $html = Carve2::render("```puml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
+        $html = Carve::render("```puml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
         self::assertStringContainsString('<pre class="plantuml">A -&gt; B', $html);
     }
 
     public function testPlantumlShorthandHonorsCssClassOverride(): void
     {
         // C2-X-034: renderer HTML uses the configured host class.
-        $html = Carve2::render("```plantuml\nA -> B\n```\n", [
+        $html = Carve::render("```plantuml\nA -> B\n```\n", [
 
             'extensions' => $this->factory->create([
                 'type' => 'plantuml',

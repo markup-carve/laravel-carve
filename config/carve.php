@@ -11,7 +11,7 @@ return [
 
     'converters' => [
         'default' => [
-            // Carve2 disables raw HTML by default and denies unsafe URL schemes.
+            // Carve disables raw HTML by default and denies unsafe URL schemes.
             'raw_html' => false,
             'url_policy' => [],
             'profile' => 'full',

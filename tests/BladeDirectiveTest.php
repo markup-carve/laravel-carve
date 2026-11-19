@@ -52,6 +52,6 @@ class BladeDirectiveTest extends TestCase
 
     public function testCarveTextDirectiveOutputsPlainText(): void
     {
-        self::markTestSkipped('Carve2 text writer is pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve text writer is pending carve-php issue 5235 (C2-T-005).');
     }
 }

@@ -14,9 +14,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Illuminate\View\Factory;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Extension\ExtensionDefinition;
-use MarkupCarve\Carve2\Extension\ExtensionProvider;
-use MarkupCarve\Carve2\Output\OutputWriter;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Output\OutputWriter;
 use MarkupCarve\LaravelCarve\Commands\ConvertCommand;
 use MarkupCarve\LaravelCarve\Commands\FormatCommand;
 use MarkupCarve\LaravelCarve\Commands\LintCommand;
@@ -158,7 +158,7 @@ class LaravelCarveServiceProvider extends ServiceProvider
                 !is_string($entry) && !is_array($entry)
                 && !$entry instanceof ExtensionDefinition && !$entry instanceof ExtensionProvider
             ) {
-                throw new InvalidArgumentException('Carve extensions must be names, configuration arrays or Carve2 definitions.');
+                throw new InvalidArgumentException('Carve extensions must be names, configuration arrays or Carve definitions.');
             }
             array_push($extensions, ...$factory->create($entry));
         }
@@ -172,7 +172,7 @@ class LaravelCarveServiceProvider extends ServiceProvider
         }
         foreach ($writerConfig as $writer) {
             if (!$writer instanceof OutputWriter) {
-                throw new InvalidArgumentException('Carve writers must implement the Carve2 OutputWriter interface.');
+                throw new InvalidArgumentException('Carve writers must implement the Carve OutputWriter interface.');
             }
             $writers[] = $writer;
         }

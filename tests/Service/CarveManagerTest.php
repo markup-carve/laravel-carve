@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Diagnostics\Diagnostic;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Diagnostics\Diagnostic;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +47,7 @@ class CarveManagerTest extends TestCase
 
     public function testToText(): void
     {
-        self::markTestSkipped('Carve2 text writer is pending carve-php issue 5235 (C2-T-005).');
+        self::markTestSkipped('Carve text writer is pending carve-php issue 5235 (C2-T-005).');
     }
 
     public function testConverterAccessor(): void
@@ -126,7 +126,7 @@ class CarveManagerTest extends TestCase
 
     public function testFromMarkdownTurnsGitHubAlertsIntoAdmonitions(): void
     {
-        self::markTestSkipped('Carve2 Markdown import is pending carve-php issue 5237 (C2-T-003).');
+        self::markTestSkipped('Carve Markdown import is pending carve-php issue 5237 (C2-T-003).');
     }
 
     public function testLintReportsTheRulesCarvePhp0114Added(): void
@@ -144,10 +144,10 @@ class CarveManagerTest extends TestCase
         self::assertContains('unclosed-code-fence', $rules("```js\nx\n"));
     }
 
-    public function testLintUsesTheCarve2RuleCatalog(): void
+    public function testLintUsesTheCarveRuleCatalog(): void
     {
         // C2-W-103: the public lint call owns the complete 0.2 catalog.
         $source = "![alt][missing]\n";
-        self::assertEquals(Carve2::lint($source), $this->manager->lint($source));
+        self::assertEquals(Carve::lint($source), $this->manager->lint($source));
     }
 }

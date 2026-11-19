@@ -130,12 +130,12 @@ class AuthoringTest extends TestCase
         // The 0.1 document transform waits for carve-php issue 5238 (D4).
     }
 
-    public function testMarkdownImportAndTextWritersPendingCarve2(): void
+    public function testMarkdownImportAndTextWritersPendingCarve(): void
     {
         self::markTestSkipped('Markdown import waits for carve-php issue 5237; text and Markdown writers wait for issue 5235 (C2-T-003, C2-T-005).');
     }
 
-    public function testHeadingLevelTransformPendingCarve2(): void
+    public function testHeadingLevelTransformPendingCarve(): void
     {
         self::markTestSkipped('Heading level document transform waits for carve-php issue 5238 (D4).');
     }
