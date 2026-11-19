@@ -14,6 +14,53 @@ use Psr\Log\NullLogger;
 
 class CarveConverterTest extends TestCase
 {
+    public function testTocKeepsInlineHeadingHtml(): void
+    {
+        $heading = (new CarveConverter())->render('# Hello *world*')->toc()[0];
+        self::assertSame('Hello world', $heading['text']);
+        self::assertSame('Hello <strong>world</strong>', $heading['html']);
+    }
+
+    public function testRootDirectoryIsAValidIncludeRoot(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'laravel-carve-root-');
+        $child = tempnam(sys_get_temp_dir(), 'laravel-carve-child-');
+        self::assertIsString($file);
+        self::assertIsString($child);
+        file_put_contents($file, '{{ ' . $child . " }}\n");
+        file_put_contents($child, "Root child\n");
+        try {
+            $converter = new CarveConverter(includeRoot: '/');
+            $result = $converter->renderFile($file);
+            self::assertStringContainsString('Root child', $result->html);
+            self::assertSame([['path' => ltrim($child, '/'), 'resolved' => true]], $result->dependencies);
+        } finally {
+            unlink($file);
+            unlink($child);
+        }
+    }
+
+    public function testMissingAbsoluteIncludeInvalidatesCacheWhenItAppears(): void
+    {
+        $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        $target = $root . '/later.crv';
+        $main = $root . '/main.crv';
+        file_put_contents($main, '{{ ' . $target . " }}\n");
+        $converter = new CarveConverter(cache: new Repository(new ArrayStore()), includeRoot: $root);
+        try {
+            self::assertStringContainsString('{{ ', $converter->toHtmlFile($main));
+            file_put_contents($target, "ARRIVED\n");
+            self::assertStringContainsString('ARRIVED', $converter->toHtmlFile($main));
+        } finally {
+            unlink($main);
+            if (is_file($target)) {
+                unlink($target);
+            }
+            rmdir($root);
+        }
+    }
+
     public function testFileIncludesAreContainedReportedAndLoggedSafely(): void
     {
         $root = sys_get_temp_dir() . '/laravel-carve-' . bin2hex(random_bytes(6));

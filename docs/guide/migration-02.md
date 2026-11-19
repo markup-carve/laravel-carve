@@ -72,4 +72,4 @@ A profile's extensions list accepts Carve2 ExtensionDefinition or ExtensionProvi
 
 ## Cache and result data
 
-RenderedCarve still supplies HTML, heading metadata, frontmatter, warnings, dependencies, and source. The metadata is read from Carve2 nodes. Cache entries are separated by option map and engine pin; mutating an option or registering a writer disables caching for that adapter. File cache entries are checked against dependency content hashes.
+RenderedCarve still supplies HTML, heading metadata, frontmatter, warnings, dependencies, and source. The metadata is read from Carve2 nodes; the heading HTML in the table of contents is rendered with the active Carve2 options, so inline formatting survives. Cache entries are separated by option map and engine pin; mutating an option or registering a writer disables caching for that adapter. File cache entries are checked against dependency content hashes, including targets named by absolute paths inside the include root.

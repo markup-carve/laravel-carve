@@ -202,10 +202,7 @@ class CarveConverter implements CarveConverterInterface
         if ($source === false) {
             throw new InvalidArgumentException(sprintf('Carve source is not a readable file: %s', $path));
         }
-        if (
-            $this->includeRoot !== null && $realPath !== $this->includeRoot
-            && !str_starts_with($realPath, $this->includeRoot . DIRECTORY_SEPARATOR)
-        ) {
+        if ($this->includeRoot !== null && !$this->insideRoot($realPath)) {
             throw new InvalidArgumentException('Carve source must be inside carve.include_root.');
         }
 
@@ -259,7 +256,7 @@ class CarveConverter implements CarveConverterInterface
 
                     'level' => is_int($level) ? $level : 1,
                     'text' => $text,
-                    'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    'html' => $this->headingHtml($tree, $node, $text),
                     'id' => is_string($id) ? $id : '',
                 ];
             } elseif ($node->type === 'frontmatter') {
@@ -294,6 +291,23 @@ class CarveConverter implements CarveConverterInterface
         return $text;
     }
 
+    private function headingHtml(Node $tree, Node $heading, string $fallback): string
+    {
+        // Render the heading with the engine so every inline form follows the
+        // active profile and URL policy. A one-heading root avoids rescanning
+        // the rest of the document for each TOC entry.
+        $single = clone $tree;
+        $single->children = [$heading];
+        $options = $this->options;
+        $options['sections'] = false;
+        $html = Carve2::render($single, $options);
+        if (preg_match('~<h[1-6](?:\\s[^>]*)?>(.*?)</h[1-6]>~s', $html, $match) === 1) {
+            return $match[1];
+        }
+
+        return htmlspecialchars($fallback, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     /**
      * @param array{path: string, from: string|null, file: string|null, read: bool} $entry
      * @param string $file
@@ -304,10 +318,13 @@ class CarveConverter implements CarveConverterInterface
             return '';
         }
         if (is_string($entry['file'] ?? null)) {
-            return $this->includeRoot . '/' . $entry['file'];
+            return rtrim($this->includeRoot, '/') . '/' . $entry['file'];
+        }
+        if (str_starts_with($entry['path'], '/')) {
+            return $entry['path'];
         }
         $from = is_string($entry['from'] ?? null) ? $entry['from'] : $file;
-        $base = str_starts_with($from, '/') ? dirname($from) : $this->includeRoot . '/' . dirname($from);
+        $base = str_starts_with($from, '/') ? dirname($from) : rtrim($this->includeRoot, '/') . '/' . dirname($from);
 
         return $base . '/' . $entry['path'];
     }
@@ -322,8 +339,7 @@ class CarveConverter implements CarveConverterInterface
         $states = [];
         foreach ($paths as $path) {
             $real = realpath($path);
-            $inside = $this->includeRoot !== null && $real !== false
-                && str_starts_with($real, $this->includeRoot . DIRECTORY_SEPARATOR);
+            $inside = $real !== false && $this->insideRoot($real);
             $states[$path] = $inside && is_file($real) ? (hash_file('xxh3', $real) ?: null) : null;
         }
 
@@ -335,6 +351,9 @@ class CarveConverter implements CarveConverterInterface
         if ($this->includeRoot === null) {
             return $identity;
         }
+        if ($this->includeRoot === '/' && str_starts_with($identity, '/')) {
+            return ltrim($identity, '/');
+        }
         if (str_starts_with($identity, $this->includeRoot . '/')) {
             return substr($identity, strlen($this->includeRoot) + 1);
         }
@@ -343,6 +362,13 @@ class CarveConverter implements CarveConverterInterface
         }
 
         return $identity;
+    }
+
+    private function insideRoot(string $path): bool
+    {
+        return $this->includeRoot !== null && ($this->includeRoot === '/'
+            ? str_starts_with($path, '/')
+            : $path === $this->includeRoot || str_starts_with($path, $this->includeRoot . '/'));
     }
 
     /**
@@ -361,10 +387,10 @@ class CarveConverter implements CarveConverterInterface
                 ? ($sourcePath === null ? null : $this->containedIdentity($sourcePath))
                 : $this->containedIdentity($diagnostic->file);
             if ($this->includeRoot !== null && $identity !== null && $identity !== self::OUTSIDE_ROOT) {
-                $candidate = realpath($this->includeRoot . '/' . $identity);
+                $candidate = realpath(rtrim($this->includeRoot, '/') . '/' . $identity);
                 if (
                     $candidate !== false && is_file($candidate)
-                    && str_starts_with($candidate, $this->includeRoot . '/')
+                    && $this->insideRoot($candidate)
                 ) {
                     $included = file_get_contents($candidate);
                     if ($included !== false) {
