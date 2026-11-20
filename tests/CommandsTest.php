@@ -16,7 +16,8 @@ class CommandsTest extends TestCase
         file_put_contents($dir . '/child.crv', 'Included *text*');
         config()->set('carve.include_root', $dir);
         try {
-            foreach (['html', 'text', 'markdown', 'ansi'] as $format) {
+            // C2-T-005: only HTML is registered until the writers in issue 5235 arrive.
+            foreach (['html'] as $format) {
                 self::assertSame(0, Artisan::call('carve:render', ['path' => $dir . '/main.crv', '--format' => $format]));
                 self::assertStringContainsString('Included', Artisan::output());
                 self::assertStringNotContainsString('{{ child.crv }}', Artisan::output());
@@ -33,14 +34,30 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testPendingRenderCommandWriters(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'carve-render-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '*bold*');
+        try {
+            foreach (['text', 'markdown', 'ansi'] as $format) {
+                self::assertSame(0, Artisan::call('carve:render', ['path' => $file, '--format' => $format]));
+                self::assertStringContainsString('bold', Artisan::output());
+            }
+        } finally {
+            unlink($file);
+        }
+    }
+
     public function testConvertAndLintHaveUsefulExitStatuses(): void
     {
         $dir = sys_get_temp_dir() . '/carve-lint-' . bin2hex(random_bytes(6));
         mkdir($dir);
-        file_put_contents($dir . '/source.md', '**bold** and *italic*');
+        file_put_contents($dir . '/source.html', '<p><strong>bold</strong> and <em>italic</em></p>');
         file_put_contents($dir . '/bad.crv', '**bold**');
         try {
-            self::assertSame(0, Artisan::call('carve:convert', ['path' => $dir . '/source.md']));
+            // C2-T-003: HTML is the registered 0.2 importer.
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $dir . '/source.html']));
             self::assertStringContainsString('*bold* and /italic/', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir]]));
             self::assertStringContainsString('bad.crv:1:', Artisan::output());
@@ -55,6 +72,47 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testPendingMarkdownConvertCommand(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'carve-import-');
+        self::assertNotFalse($file);
+        file_put_contents($file, "# Title\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file, '--from' => 'markdown']));
+            self::assertStringContainsString('= Title', Artisan::output());
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testConvertCommandReadsAMarkdownFileAsGitHubFlavored(): void
+    {
+        $dir = sys_get_temp_dir() . '/carve-import-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        $file = $dir . '/table.md';
+        file_put_contents($file, "| a | b |\n|---|--:|\n| 1 | 2 |\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file]));
+            self::assertStringContainsString("|= a |={>} b |\n| 1 | 2 |", Artisan::output());
+        } finally {
+            unlink($file);
+            rmdir($dir);
+        }
+    }
+
+    public function testConvertCommandImportsGitHubFlavoredMarkdown(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'carve-import-');
+        self::assertNotFalse($file);
+        file_put_contents($file, "> [!NOTE]\n> Read this.\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file, '--from' => 'gfm']));
+            self::assertStringContainsString("::: note\nRead this.\n:::", Artisan::output());
+        } finally {
+            unlink($file);
+        }
+    }
+
     public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void
     {
         $dir = sys_get_temp_dir() . '/carve-lint-include-' . bin2hex(random_bytes(6));
@@ -62,7 +120,9 @@ class CommandsTest extends TestCase
         file_put_contents($dir . '/main.crv', "# Main\n\n{{ child.crv }}\n");
         file_put_contents($dir . '/child.crv', "**bold**\n");
         try {
-            self::assertSame(0, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv']]));
+            // C2-N-085: lint reports a missing resolver for an unresolved include.
+            self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv']]));
+            self::assertStringContainsString('include-no-resolver', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir]));
             self::assertStringContainsString('child.crv:1:', Artisan::output());
             self::assertSame(1, Artisan::call('carve:lint', ['paths' => [$dir . '/main.crv'], '--include-root' => $dir . '/missing']));

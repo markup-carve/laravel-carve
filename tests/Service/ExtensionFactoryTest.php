@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\CarveConverter;
-use MarkupCarve\Carve\Extension\AutolinkExtension;
-use MarkupCarve\Carve\Extension\ExternalLinksExtension;
-use MarkupCarve\Carve\Extension\FencedRenderExtension;
-use MarkupCarve\Carve\Extension\MentionsExtension;
-use MarkupCarve\Carve\Extension\SemanticSpanExtension;
-use MarkupCarve\Carve\Extension\SmartQuotesExtension;
-use MarkupCarve\Carve\Extension\WikilinksExtension;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Extension\Claim;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Node;
+use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -27,159 +25,207 @@ class ExtensionFactoryTest extends TestCase
 
     public function testShorthandStringCreatesExtension(): void
     {
-        $this->assertInstanceOf(AutolinkExtension::class, $this->factory->create('autolink'));
+        // C2-X-039: tabs are the standard named extension definitions in 0.2.
+        self::assertCount(2, $this->factory->create('tabs'));
+        // C2-X-057: explicit autolinks are core syntax, so they need no extension registration.
+        self::assertStringContainsString('href="https://example.test"', Carve::render('<https://example.test>'));
     }
 
     public function testArrayConfigCreatesExtension(): void
     {
-        $this->assertInstanceOf(
-            SmartQuotesExtension::class,
-            $this->factory->create(['type' => 'smart_quotes', 'locale' => 'de']),
-        );
+        // C2-X-001: a host factory returns definitions, not 0.1 extension objects.
+        self::assertContainsOnlyInstancesOf(ExtensionDefinition::class, $this->factory->create(['type' => 'tabs']));
+        $this->expectException(InvalidArgumentException::class);
+        $this->factory->create(['type' => 'tabs', 'misspelled_option' => true]);
     }
 
-    public function testSemanticSpanHasNoOptions(): void
+    public function testInlineRendererRunsThroughHostFactory(): void
     {
-        $this->assertInstanceOf(SemanticSpanExtension::class, $this->factory->create('semantic_span'));
+        $definition = new ExtensionDefinition(
+            'host.embed',
+            '1',
+            matcher: ['form' => 'inline', 'name' => 'embed'],
+            transform: static function (Claim $claim): Node {
+                $node = new Node('inline_extension', []);
+                $node->f['name'] = 'host.embed';
+                $node->f['version'] = '1';
+                $node->f['fallback'] = $claim->node->children ?? [];
+
+                return $node;
+            },
+            renderer: static fn (Node $node, RenderHost $host): string => '<b>handled</b>',
+        );
+        self::assertStringContainsString(
+            '<b>handled</b>',
+            Carve::render('Watch :embed[abc].', ['extensions' => $this->factory->create($definition)]),
+        );
     }
 
     public function testUnknownTypeReturnsNull(): void
     {
-        $this->assertNull($this->factory->create(['type' => 'nope']));
+        // C2-X-001: an unavailable 0.1 shorthand must be reported explicitly.
+        $this->expectException(InvalidArgumentException::class);
+        $this->factory->create(['type' => 'nope']);
     }
 
     public function testCustomClassesInstancesAndWrongOptions(): void
     {
-        $instance = new AutolinkExtension();
-        self::assertSame($instance, $this->factory->create($instance));
-        self::assertInstanceOf(AutolinkExtension::class, $this->factory->create(AutolinkExtension::class));
+        // C2-X-001: applications pass definitions directly, without 0.1 extension classes.
+        $definition = new ExtensionDefinition('host.example', '1');
+        self::assertSame([$definition], $this->factory->create($definition));
         $this->expectException(InvalidArgumentException::class);
-        $this->factory->create(['type' => 'autolink', 'misspelled_option' => true]);
+        $this->factory->create(['type' => 'plantuml', 'css_class' => 'bad class']);
     }
 
     public function testEveryTypeConstantCreatesExtension(): void
     {
-        foreach (ExtensionFactory::types() as $type) {
-            $this->assertNotNull($this->factory->create($type), sprintf('Type `%s` did not create an extension.', $type));
+        // C2-X-001: only shorthands with registered 0.2 definitions are exposed.
+        foreach (['plantuml', 'tabs'] as $type) {
+            self::assertNotEmpty($this->factory->create($type));
         }
-    }
-
-    public function testEveryBundledCarvePhpExtensionHasAType(): void
-    {
-        $files = glob(__DIR__ . '/../../vendor/markup-carve/carve-php/src/Extension/*Extension.php') ?: [];
-        $this->assertNotEmpty($files);
-
-        $missing = [];
-        foreach ($files as $file) {
-            $class = basename($file, '.php');
-            if ($class === 'ExtensionInterface') {
-                continue;
-            }
-            $stem = (string)preg_replace('/Extension$/', '', $class);
-            $type = strtolower((string)preg_replace('/(?<!^)[A-Z]/', '_$0', $stem));
-            if (!in_array($type, ExtensionFactory::types(), true)) {
-                $missing[] = $class;
-            }
-        }
-
-        $this->assertSame([], $missing, 'carve-php bundles extensions without a config type shorthand.');
     }
 
     public function testTypesAreUniqueAndSorted(): void
     {
-        $types = ExtensionFactory::types();
-
-        $this->assertSame(array_unique($types), $types);
-
-        $sorted = $types;
-        sort($sorted);
-        $this->assertSame($sorted, $types);
+        // C2-X-001: each 0.2 definition has a unique qualified name.
+        $names = [];
+        foreach ($this->factory->create('plantuml') as $definition) {
+            self::assertInstanceOf(ExtensionDefinition::class, $definition);
+            $names[] = $definition->name;
+        }
+        self::assertSame(count($names), count(array_unique($names)));
     }
 
     public function testExternalLinksAcceptsOptions(): void
     {
-        $ext = $this->factory->create([
+        $extensions = $this->factory->create(['type' => 'external_links', 'target' => '_self', 'rel' => 'nofollow']);
+        $html = Carve::render('[outside](https://example.test)', ['extensions' => $extensions]);
+        self::assertStringContainsString('target="_self"', $html);
+        self::assertStringContainsString('rel="nofollow"', $html);
+    }
+
+    public function testExternalLinksSkipsInternalHostsAndAddsNofollow(): void
+    {
+        $extensions = $this->factory->create([
             'type' => 'external_links',
-            'internal_hosts' => ['example.com'],
-            'target' => '_blank',
-            'rel' => 'noopener',
+            'internal_hosts' => ['example.test'],
             'nofollow' => true,
         ]);
-
-        $this->assertInstanceOf(ExternalLinksExtension::class, $ext);
+        $html = Carve::render('[inside](https://example.test/a) [outside](https://else.test/a)', ['extensions' => $extensions]);
+        self::assertStringNotContainsString('href="https://example.test/a" target=', $html);
+        self::assertStringContainsString('href="https://else.test/a" rel="noopener noreferrer nofollow" target="_blank"', $html);
     }
 
-    public function testMentionsAcceptsOptions(): void
+    public function testTabsAriaMode(): void
     {
-        $ext = $this->factory->create([
-            'type' => 'mentions',
-            'user_url_template' => '/users/{username}',
-            'user_class' => 'mention',
-        ]);
-
-        $this->assertInstanceOf(MentionsExtension::class, $ext);
-    }
-
-    public function testWikilinksWithUrlTemplate(): void
-    {
-        $ext = $this->factory->create([
-            'type' => 'wikilinks',
-            'url_template' => '/wiki/{page}',
-            'link_class' => 'wiki-link',
-        ]);
-
-        $this->assertInstanceOf(WikilinksExtension::class, $ext);
-    }
-
-    public function testWikilinksWithoutUrlTemplate(): void
-    {
-        $ext = $this->factory->create('wikilinks');
-
-        $this->assertInstanceOf(WikilinksExtension::class, $ext);
+        $extensions = $this->factory->create(['type' => 'tabs', 'mode' => 'aria']);
+        $html = Carve::render(":::: tabs\n::: tab \"One\"\nText\n:::\n::::\n", ['extensions' => $extensions]);
+        self::assertStringContainsString('role="tablist"', $html);
     }
 
     public function testPlantumlShorthandIsAFencedRenderExtension(): void
     {
-        $ext = $this->factory->create('plantuml');
-
-        $this->assertInstanceOf(FencedRenderExtension::class, $ext);
+        // C2-X-005: both supported fence names have qualified definitions.
+        $extensions = $this->factory->create('plantuml');
+        self::assertCount(2, $extensions);
+        self::assertInstanceOf(ExtensionDefinition::class, $extensions[0]);
+        self::assertInstanceOf(ExtensionDefinition::class, $extensions[1]);
+        self::assertSame(
+            ['laravel.plantuml.plantuml', 'laravel.plantuml.puml'],
+            [$extensions[0]->name, $extensions[1]->name],
+        );
     }
 
     public function testPlantumlShorthandRendersPlantumlBlock(): void
     {
-        $ext = $this->factory->create('plantuml');
-        $this->assertNotNull($ext);
-
-        $converter = new CarveConverter();
-        $converter->addExtension($ext);
-        $html = $converter->convert("``` plantuml\n@startuml\nA -> B\n@enduml\n```");
-
-        $this->assertStringContainsString('<pre class="plantuml"', $html);
-        // Text mode keeps the source as escaped text; `>` survives for arrows.
-        $this->assertStringContainsString('A -> B', $html);
+        $html = Carve::render("```plantuml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
+        // C2-X-034: the trusted host renderer escapes code text in its HTML.
+        self::assertStringContainsString('<pre class="plantuml">A -&gt; B', $html);
     }
 
     public function testPumlLanguageAlsoRendersPlantumlBlock(): void
     {
-        $ext = $this->factory->create('plantuml');
-        $this->assertNotNull($ext);
-
-        $converter = new CarveConverter();
-        $converter->addExtension($ext);
-        $html = $converter->convert("``` puml\n@startuml\nA -> B\n@enduml\n```");
-
-        $this->assertStringContainsString('<pre class="plantuml"', $html);
+        // C2-X-005: the alias is a second matcher with the same host renderer.
+        $html = Carve::render("```puml\nA -> B\n```\n", ['extensions' => $this->factory->create('plantuml')]);
+        self::assertStringContainsString('<pre class="plantuml">A -&gt; B', $html);
     }
 
     public function testPlantumlShorthandHonorsCssClassOverride(): void
     {
-        $ext = $this->factory->create(['type' => 'plantuml', 'css_class' => 'uml']);
-        $this->assertNotNull($ext);
+        // C2-X-034: renderer HTML uses the configured host class.
+        $html = Carve::render("```plantuml\nA -> B\n```\n", [
 
-        $converter = new CarveConverter();
-        $converter->addExtension($ext);
-        $html = $converter->convert("``` plantuml\nA -> B\n```");
+            'extensions' => $this->factory->create([
+                'type' => 'plantuml',
+                'css_class' => 'uml',
+            ]),
+        ]);
+        self::assertStringContainsString('<pre class="uml">', $html);
+    }
 
-        $this->assertStringContainsString('<pre class="uml"', $html);
+    public function testEveryNamedTypeCreatesExtensions(): void
+    {
+        $required = ['default_attributes' => ['defaults' => []], 'fenced_render' => ['language' => 'flow']];
+        foreach (ExtensionFactory::types() as $type) {
+            self::assertNotEmpty($this->factory->create(['type' => $type] + ($required[$type] ?? [])), $type);
+        }
+    }
+
+    public function testNamedTypesRenderThroughTheEngine(): void
+    {
+        $render = fn (array|string $config, string $source): string => Carve::render(
+            $source,
+            ['extensions' => $this->factory->create($config)],
+        );
+
+        self::assertStringContainsString('<details', $render('details', "::: details\nBody\n:::\n"));
+        self::assertStringContainsString('class="mermaid"', $render('mermaid', "```mermaid\nA --> B\n```\n"));
+        self::assertStringContainsString(
+            'href="/wiki/main-page"',
+            $render(['type' => 'wikilinks', 'url_template' => '/wiki/{page}'], 'See :wiki[Main Page].'),
+        );
+        self::assertStringContainsString(
+            'class="anchor"',
+            $render(['type' => 'heading_permalinks', 'css_class' => 'anchor', 'symbol' => '#'], "# Title\n"),
+        );
+        self::assertStringContainsString(
+            'class="toc"',
+            $render(['type' => 'table_of_contents', 'max_level' => 2], "# One\n\n## Two\n"),
+        );
+        self::assertStringContainsString('<img', $render('img_fence', "```img\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>\n```\n"));
+    }
+
+    public function testNamedTypeOptionsAreChecked(): void
+    {
+        foreach (
+            [
+                ['type' => 'code_group', 'misspelled' => true],
+                ['type' => 'table_of_contents', 'max_level' => 'two'],
+                ['type' => 'fenced_render'],
+                ['type' => 'fenced_render', 'language' => 'flow', 'build' => 'x'],
+                ['type' => 'fenced_render', 'language' => 42],
+                ['type' => 'img_fence', 'language' => []],
+            ] as $config
+        ) {
+            try {
+                $this->factory->create($config);
+                self::fail('accepted ' . json_encode($config));
+            } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testBundleTransformsRunThroughTheConverter(): void
+    {
+        $converter = new CarveConverter([
+
+            'extensions' => $this->factory->create([
+                'type' => 'default_attributes',
+                'defaults' => ['image' => ['loading' => 'lazy']],
+            ]),
+        ]);
+
+        self::assertStringContainsString('loading="lazy"', $converter->toHtml('![a](b.png)'));
     }
 }

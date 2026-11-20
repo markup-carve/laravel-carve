@@ -1,16 +1,5 @@
-# laravel-carve documentation
+# Laravel Carve documentation
 
-- [Extensions / Index](extensions/index.md)
-- [Guide / Authoring](guide/authoring.md)
-- [Guide / Blade Usage](guide/blade-usage.md)
-- [Guide / Caching](guide/caching.md)
-- [Guide / Carve Syntax](guide/carve-syntax.md)
-- [Guide / Configuration](guide/configuration.md)
-- [Guide / Extensions](guide/extensions.md)
-- [Guide / Index](guide/index.md)
-- [Guide / Installation](guide/installation.md)
-- [Guide / Safe Mode](guide/safe-mode.md)
-- [Guide / Service Usage](guide/service-usage.md)
-- [Guide / Validation](guide/validation.md)
-- [Guide](guide.md)
-- [Index](index.md)
+Start with the [Carve 0.2 migration guide](guide/migration.md). It covers installation, source documents, options, facade calls, includes, import, writers, extensions, and caching.
+
+The [Carve 0.2 specification](https://github.com/markup-carve/carve/tree/next2/spec/0.2) defines source behavior. The [PHP engine guide](https://github.com/markup-carve/carve-php/blob/next2/docs/README.md) defines the Carve public API.

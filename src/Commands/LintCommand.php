@@ -50,9 +50,29 @@ class LintCommand extends Command
             $path = $includeRoot === null ? $file : ((string)realpath($file) ?: $file);
             foreach ($carve->lint($source, $includeRoot, $includeRoot === null ? null : $path) as $warning) {
                 $location = $warning->file ?? $path;
+                if ($includeRoot !== null && $warning->file !== null) {
+                    $location = $includeRoot . '/' . $warning->file;
+                }
+                $warningSource = $source;
+                if ($includeRoot !== null && $warning->file !== null) {
+                    $candidate = realpath($includeRoot . '/' . $warning->file);
+                    if (
+                        $candidate !== false && is_file($candidate)
+                        && str_starts_with($candidate, $includeRoot . '/')
+                    ) {
+                        $included = file_get_contents($candidate);
+                        if ($included !== false) {
+                            $warningSource = $included;
+                        }
+                    }
+                }
+                $before = substr($warningSource, 0, max(0, $warning->startOffset));
+                $line = substr_count($before, "\n") + 1;
+                $lastBreak = strrpos($before, "\n");
+                $column = strlen($before) - ($lastBreak === false ? -1 : $lastBreak);
                 // A file that is both linted and included by another one would report twice.
-                $rows["{$location}:{$warning->line}:{$warning->column}\0{$warning->rule}\0{$warning->message}"] =
-                    ["{$location}:{$warning->line}:{$warning->column}", $warning->rule, $warning->message];
+                $rows["{$location}:{$line}:{$column}\0{$warning->code}\0{$warning->message}"] =
+                    ["{$location}:{$line}:{$column}", $warning->code, $warning->message];
             }
         }
 

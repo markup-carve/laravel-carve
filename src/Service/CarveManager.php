@@ -6,13 +6,9 @@ namespace MarkupCarve\LaravelCarve\Service;
 
 use Closure;
 use InvalidArgumentException;
-use MarkupCarve\Carve\CarveConverter as EngineConverter;
-use MarkupCarve\Carve\Converter\HtmlToCarve;
-use MarkupCarve\Carve\Converter\MarkdownToCarve;
-use MarkupCarve\Carve\Lint\DocumentLinter;
-use MarkupCarve\Carve\Lint\IncludeLinter;
-use MarkupCarve\Carve\Node\Document;
-use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Include\FileResolver;
+use MarkupCarve\Carve\Node;
 use MarkupCarve\LaravelCarve\RenderedCarve;
 
 class CarveManager
@@ -25,7 +21,7 @@ class CarveManager
     private array $resolved = [];
 
     /**
-     * @var array<string, list<\Closure(\MarkupCarve\Carve\CarveConverter): void>>
+     * @var array<string, list<\Closure(\MarkupCarve\LaravelCarve\Service\CarveConverter): void>>
      */
     private array $customizers = [];
 
@@ -137,7 +133,7 @@ class CarveManager
 
     /**
      * @param string $name
-     * @param \Closure(\MarkupCarve\Carve\CarveConverter): void $callback
+     * @param \Closure(\MarkupCarve\LaravelCarve\Service\CarveConverter): void $callback
      *
      * @throws \InvalidArgumentException
      */
@@ -181,19 +177,30 @@ class CarveManager
         return new RenderedCarve($source, $report['value'], warnings: $report['warnings'], dependencies: $report['dependencies'], suppressedWarnings: $report['suppressedWarnings']);
     }
 
-    public function parse(string $source, ?string $converter = null): Document
+    public function parse(string $source, ?string $converter = null): Node
     {
         return $this->getConverter($converter)->parse($source);
     }
 
-    public function fromMarkdown(string $source): string
+    /**
+     * @param string $source
+     * @param string $flavor `gfm` (the default, as the 0.1 importer read) or `markdown` for strict CommonMark, which
+     *   keeps GFM tables, task lists and alerts as text.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function fromMarkdown(string $source, string $flavor = 'gfm'): string
     {
-        return (new MarkdownToCarve())->convert($source);
+        if (!in_array($flavor, ['markdown', 'gfm'], true)) {
+            throw new InvalidArgumentException(sprintf('Markdown flavor must be "markdown" or "gfm", not "%s".', $flavor));
+        }
+
+        return Carve::importDocument($source, ['from' => $flavor])->source;
     }
 
     public function fromHtml(string $source): string
     {
-        return (new HtmlToCarve())->convert($source);
+        return Carve::importDocument($source, ['from' => 'html'])->source;
     }
 
     /**
@@ -201,22 +208,26 @@ class CarveManager
      */
     public function format(string $source, bool $alignTables = false): string
     {
-        return EngineConverter::toCarve($source, $alignTables);
+        return Carve::format($source, ['alignTables' => $alignTables]);
     }
 
     /**
      * With an include root, included files are linted too and their findings
      * carry `file` and `includedBy`.
      *
-     * @return list<\MarkupCarve\Carve\Lint\LintWarning>
+     * @return list<\MarkupCarve\Carve\Diagnostics\Diagnostic>
      */
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
-        if ($includeRoot === null) {
-            return (new DocumentLinter())->lint($source);
-        }
+        $options = $includeRoot === null ? [] : [
 
-        return (new IncludeLinter())->lint($source, [], new FilesystemIncludeResolver($includeRoot), $sourcePath);
+            'includes' => [
+                'resolver' => FileResolver::forRoot($includeRoot),
+                'file' => $sourcePath,
+            ],
+        ];
+
+        return array_values(Carve::lint($source, $options));
     }
 
     private function getConverter(?string $name): CarveConverterInterface
@@ -236,7 +247,9 @@ class CarveManager
             $callbacks = $this->customizers[$name] ?? [];
             $applied = $definition instanceof Closure ? 0 : ($this->appliedCustomizers[$name] ?? 0);
             foreach (array_slice($callbacks, $applied) as $customizer) {
-                $customizer($converter->getConverter());
+                if ($converter instanceof CarveConverter) {
+                    $customizer($converter);
+                }
             }
             if (!$definition instanceof Closure) {
                 $this->appliedCustomizers[$name] = count($callbacks);
@@ -250,7 +263,7 @@ class CarveManager
     private function getRawConverter(): CarveConverterInterface
     {
         if ($this->rawConverter === null) {
-            $this->rawConverter = new CarveConverter(safeMode: false);
+            $this->rawConverter = new CarveConverter(options: ['rawHtml' => true]);
         }
 
         return $this->rawConverter;
