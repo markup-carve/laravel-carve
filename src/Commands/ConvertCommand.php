@@ -15,7 +15,7 @@ class ConvertCommand extends Command
      */
     protected $signature = 'carve:convert
         {path : The Markdown or HTML file to convert}
-        {--from= : markdown, gfm or html (guessed from the file extension)}
+        {--from= : gfm, markdown (strict CommonMark) or html (guessed from the file extension; .md reads as gfm)}
         {--output= : Write to this file instead of the console}';
 
     /**
@@ -38,7 +38,7 @@ class ConvertCommand extends Command
         }
 
         $from = $this->option('from') ?: match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
-            'md', 'markdown' => 'markdown',
+            'md', 'markdown' => 'gfm',
             'html', 'htm' => 'html',
             default => null,
         };

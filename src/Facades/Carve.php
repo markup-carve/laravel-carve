@@ -12,7 +12,7 @@ use MarkupCarve\LaravelCarve\Service\CarveManager;
  * @method static \MarkupCarve\LaravelCarve\RenderedCarve render(string $source, ?string $converter = null)
  * @method static \MarkupCarve\LaravelCarve\RenderedCarve renderFile(string $path, ?string $converter = null)
  * @method static \MarkupCarve\Carve\Node parse(string $source, ?string $converter = null)
- * @method static string fromMarkdown(string $source, string $flavor = 'markdown')
+ * @method static string fromMarkdown(string $source, string $flavor = 'gfm')
  * @method static string fromHtml(string $source)
  * @method static string format(string $source, bool $alignTables = false)
  * @method static list<\MarkupCarve\Carve\Diagnostics\Diagnostic> lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null)

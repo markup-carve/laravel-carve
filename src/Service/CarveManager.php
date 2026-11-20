@@ -184,11 +184,12 @@ class CarveManager
 
     /**
      * @param string $source
-     * @param string $flavor `markdown` (CommonMark) or `gfm`, which also maps GitHub alerts to admonitions.
+     * @param string $flavor `gfm` (the default, as the 0.1 importer read) or `markdown` for strict CommonMark, which
+     *   keeps GFM tables, task lists and alerts as text.
      *
      * @throws \InvalidArgumentException
      */
-    public function fromMarkdown(string $source, string $flavor = 'markdown'): string
+    public function fromMarkdown(string $source, string $flavor = 'gfm'): string
     {
         if (!in_array($flavor, ['markdown', 'gfm'], true)) {
             throw new InvalidArgumentException(sprintf('Markdown flavor must be "markdown" or "gfm", not "%s".', $flavor));
