@@ -184,7 +184,7 @@ class CarveManager
 
     public function fromMarkdown(string $source): string
     {
-        throw new InvalidArgumentException('Carve 0.2 Markdown import is not available yet.');
+        return Carve::importDocument($source, ['from' => 'markdown'])->source;
     }
 
     public function fromHtml(string $source): string

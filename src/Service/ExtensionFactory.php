@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\Navigation;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Extension\Tabs;
 use MarkupCarve\Carve\Node;
@@ -43,6 +44,25 @@ class ExtensionFactory
             }
 
             return [self::plantuml('plantuml', $class), self::plantuml('puml', $class)];
+        }
+        if ($type === 'external_links') {
+            self::acceptKeys($config, ['type', 'rel', 'target']);
+            $target = $config['target'] ?? '_blank';
+            $rel = $config['rel'] ?? 'noopener noreferrer';
+            if (!is_string($target) || !is_string($rel)) {
+                throw new InvalidArgumentException('External link target and rel must be strings.');
+            }
+
+            return [Navigation::externalLinks($target, $rel)];
+        }
+        if ($type === 'heading_levels') {
+            self::acceptKeys($config, ['type', 'offset']);
+            $offset = $config['offset'] ?? 0;
+            if (!is_int($offset)) {
+                throw new InvalidArgumentException('Heading level offset must be an integer.');
+            }
+
+            return [Navigation::headingLevelShift($offset)];
         }
 
         throw new InvalidArgumentException(sprintf(

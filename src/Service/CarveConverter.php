@@ -450,13 +450,18 @@ class CarveConverter implements CarveConverterInterface
      */
     private function writeTarget(string $format, string $source, ?array $options = null): string
     {
-        if (!$this->writers->has($format)) {
+        $target = $format === 'text' && !$this->writers->has('text') ? 'plain' : $format;
+        if (!$this->writers->has($target)) {
             throw new InvalidArgumentException(sprintf('Carve %s writer not available yet.', $format));
         }
         $options ??= $this->options;
         $tree = Carve::parse($source, $this->parseOptions($options));
 
-        return Carve::writeTo($format, $tree, $options, $this->writers);
+        $writerOptions = $target === $format && !in_array($target, ['markdown', 'plain', 'ansi'], true)
+            ? $options
+            : array_intersect_key($options, array_flip(['smartTypography', 'strictLosses', 'urlPolicy']));
+
+        return Carve::writeTo($target, $tree, $writerOptions, $this->writers);
     }
 
     public function parse(string $carve): Node

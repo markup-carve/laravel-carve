@@ -47,7 +47,7 @@ class CarveManagerTest extends TestCase
 
     public function testToText(): void
     {
-        self::markTestSkipped('Carve text writer is pending carve-php issue 5235 (C2-T-005).');
+        self::assertSame("Hello world!\n", $this->manager->toText('Hello *world*!'));
     }
 
     public function testConverterAccessor(): void
@@ -126,7 +126,7 @@ class CarveManagerTest extends TestCase
 
     public function testFromMarkdownTurnsGitHubAlertsIntoAdmonitions(): void
     {
-        self::markTestSkipped('Carve Markdown import is pending carve-php issue 5237 (C2-T-003).');
+        self::assertSame("= Title\n", $this->manager->fromMarkdown("# Title\n"));
     }
 
     public function testLintReportsTheRulesCarvePhp0114Added(): void
@@ -138,7 +138,7 @@ class CarveManagerTest extends TestCase
         );
 
         self::assertContains('list-item-body-below-content-column', $rules("9. a\n   - b\n10. c\n   - d\n"));
-        self::assertContains('description-separator-below-content-column', $rules("- a\n  :: term\n: detail\n"));
+        self::assertContains('description-separator-below-content-column', $rules("::: box\n   :: t\n: d\n:::\n"));
         // C2-W-103: obsolete 0.1 rule is absent from the 0.2 catalog.
         self::assertNotContains('consumed-key-near-miss', $rules("{lose}\n- a\n- b\n"));
         self::assertContains('unclosed-code-fence', $rules("```js\nx\n"));

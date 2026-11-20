@@ -248,7 +248,7 @@ class CarveConverterTest extends TestCase
 
     public function testToText(): void
     {
-        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::assertSame("Hello world!\n", (new CarveConverter())->toText('Hello *world*!'));
     }
 
     public function testSafeModeEnabledByDefault(): void
@@ -303,12 +303,12 @@ class CarveConverterTest extends TestCase
 
     public function testToMarkdownRendersMarkdown(): void
     {
-        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::assertSame("**bold**\n", (new CarveConverter())->toMarkdown('*bold*'));
     }
 
     public function testToAnsiRendersTerminalOutput(): void
     {
-        self::markTestSkipped('Carve output writer is pending carve-php issue 5235 (C2-T-005).');
+        self::assertStringContainsString('bold', (new CarveConverter())->toAnsi('*bold*'));
     }
 
     public function testParseReturnsDocument(): void

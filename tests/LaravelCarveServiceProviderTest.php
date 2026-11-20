@@ -51,7 +51,7 @@ class LaravelCarveServiceProviderTest extends TestCase
 
     public function testFacadeToText(): void
     {
-        self::markTestSkipped('Carve text writer is pending carve-php issue 5235 (C2-T-005).');
+        self::assertSame("Hello world!\n", Carve::toText('Hello *world*!'));
     }
 
     public function testDefaultConfigHasSafeMode(): void

@@ -97,7 +97,10 @@ class ExtensionFactoryTest extends TestCase
 
     public function testExternalLinksAcceptsOptions(): void
     {
-        self::markTestSkipped('External link document transform is pending carve-php issue 5238 (D4).');
+        $extensions = $this->factory->create(['type' => 'external_links', 'target' => '_self', 'rel' => 'nofollow']);
+        $html = Carve::render('[outside](https://example.test)', ['extensions' => $extensions]);
+        self::assertStringContainsString('target="_self"', $html);
+        self::assertStringContainsString('rel="nofollow"', $html);
     }
 
     public function testPlantumlShorthandIsAFencedRenderExtension(): void

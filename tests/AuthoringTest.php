@@ -132,12 +132,17 @@ class AuthoringTest extends TestCase
 
     public function testMarkdownImportAndTextWritersPendingCarve(): void
     {
-        self::markTestSkipped('Markdown import waits for carve-php issue 5237; text and Markdown writers wait for issue 5235 (C2-T-003, C2-T-005).');
+        self::assertSame("= Title\n", Carve::fromMarkdown("# Title\n"));
+        self::assertSame("bold\n", Carve::toText('*bold*'));
+        self::assertSame("**bold**\n", Carve::toMarkdown('*bold*'));
     }
 
     public function testHeadingLevelTransformPendingCarve(): void
     {
-        self::markTestSkipped('Heading level document transform waits for carve-php issue 5238 (D4).');
+        config()->set('carve.converters.default.extensions', [['type' => 'heading_levels', 'offset' => 1]]);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        self::assertStringContainsString('<h2', Carve::toHtml('= Title'));
     }
 
     public function testUnknownExtensionConfigurationFailsExplicitly(): void

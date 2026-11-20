@@ -135,14 +135,14 @@ class CarvePortTest extends TestCase
 
     public function testUnavailableWriterHasClearError(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Carve markdown writer not available yet.');
-        Carve::toMarkdown('hello');
+        self::assertSame("hello\n", Carve::toMarkdown('hello'));
     }
 
     public function testMarkdownTextAndAnsiWritersPendingEngineRegistration(): void
     {
-        self::markTestSkipped('Carve markdown, text and ansi writers are pending carve-php issue 5235.');
+        self::assertSame("**bold**\n", Carve::toMarkdown('*bold*'));
+        self::assertSame("bold\n", Carve::toText('*bold*'));
+        self::assertStringContainsString('bold', Carve::toAnsi('*bold*'));
     }
 
     public function testDocumentTransformExtensionPendingEngineApi(): void
