@@ -66,6 +66,10 @@ class CarveConverter implements CarveConverterInterface
             $this->includeRoot = rtrim($root, DIRECTORY_SEPARATOR) ?: '/';
         }
         $this->options = $options;
+        if (isset($options['includes'])) {
+            // A custom store may change while the Carve source remains identical.
+            $this->cache = null;
+        }
         $this->writers = Carve::writers();
         foreach ($writers as $writer) {
             $this->registerWriter($writer);
