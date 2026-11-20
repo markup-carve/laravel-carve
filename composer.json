@@ -21,7 +21,7 @@
     "require": {
         "php": "^8.2",
         "ext-dom": "*",
-        "markup-carve/carve-php": "dev-next2#14a3fabd4b16069501b8768179a98a447449f36b",
+        "markup-carve/carve-php": "dev-next2#1ce70376fbcb06d4ac40493efd131becaf957f29",
         "illuminate/contracts": "^11.0 || ^12.0 || ^13.0",
         "illuminate/support": "^11.0 || ^12.0 || ^13.0",
         "illuminate/view": "^11.0 || ^12.0 || ^13.0",
