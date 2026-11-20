@@ -68,7 +68,7 @@ A host may provide an OutputWriter instance in a profile's writers list or call 
 
 ## Extensions
 
-A profile's extensions list accepts Carve ExtensionDefinition or ExtensionProvider objects. The tabs shorthand registers the standard Carve tabs definitions. The plantuml shorthand registers fenced renderers for both `plantuml` and `puml`, with an optional `css_class` for a single CSS class. Other old 0.1 extension names and classes cannot be passed into the 0.2 engine. They fail explicitly so no 0.1 behavior enters the 0.2 path. Several former extensions are now core Carve 0.2 syntax; review source and settings before removing a registration. Document transform and build-time or inline renderer hooks are still pending the engine's provisional extension API.
+A profile's extensions list accepts Carve ExtensionDefinition or ExtensionProvider objects and the names in the [extension guide](extensions.md#names). Most 0.1 names map to a carve-php 0.2 extension of the same name; options use the 0.2 factory parameters (for example `table_of_contents` takes `css_class`, not `toc_class`, and `heading_permalinks` takes `prepend`, not `position`). The 0.1 extension classes cannot run on a Carve tree and fail explicitly. `mentions` became the core `social` setting, and `frontmatter` and `admonition` are core 0.2 syntax with no registration. Several former extensions are now core Carve 0.2 syntax; review source and settings before removing a registration. Document transform and build-time or inline renderer hooks are still pending the engine's provisional extension API.
 
 ## Cache and result data
 
