@@ -66,6 +66,10 @@ class CarveConverter implements CarveConverterInterface
             $this->includeRoot = rtrim($root, DIRECTORY_SEPARATOR) ?: '/';
         }
         $this->options = $options;
+        if (isset($options['includes'])) {
+            // A custom store may change while the Carve source remains identical.
+            $this->cache = null;
+        }
         $this->writers = Carve::writers();
         foreach ($writers as $writer) {
             $this->registerWriter($writer);
@@ -181,7 +185,8 @@ class CarveConverter implements CarveConverterInterface
         $result = Carve::renderWithDocumentTransforms($source, self::transforms($options), $options);
         $parseOptions = $this->parseOptions($options);
         $tree = Carve::parse($source, $parseOptions);
-        $entries = $this->includeRoot === null ? [] : Carve::includeDependencies($tree, $parseOptions);
+        $entries = $this->includeRoot === null || isset($this->options['includes'])
+            ? [] : Carve::includeDependencies($tree, $parseOptions);
         $dependencies = [];
         $targets = [];
         foreach ($entries as $entry) {
@@ -235,7 +240,9 @@ class CarveConverter implements CarveConverterInterface
     private function fileOptions(string $path): array
     {
         $options = $this->options;
-        if ($this->includeRoot !== null) {
+        if (isset($options['includes']) && is_array($options['includes'])) {
+            $options['includes']['file'] = $path;
+        } elseif ($this->includeRoot !== null) {
             $options['includes'] = ['resolver' => FileResolver::forRoot($this->includeRoot), 'file' => $path];
         }
 

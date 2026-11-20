@@ -18,9 +18,11 @@ use MarkupCarve\Carve\Extension\FencedRender;
 use MarkupCarve\Carve\Extension\Glossary;
 use MarkupCarve\Carve\Extension\ImgFence;
 use MarkupCarve\Carve\Extension\IndexTerms;
+use MarkupCarve\Carve\Extension\LinkPolicy;
 use MarkupCarve\Carve\Extension\ListTable;
 use MarkupCarve\Carve\Extension\MathBlock;
 use MarkupCarve\Carve\Extension\Navigation;
+use MarkupCarve\Carve\Extension\NavTree;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Extension\SemanticSpan;
 use MarkupCarve\Carve\Extension\SmartQuotes;
@@ -104,9 +106,13 @@ class ExtensionFactory
         }
         $type = $config['type'] ?? null;
         if ($type === 'tabs') {
-            self::acceptKeys($config, ['type']);
+            self::acceptKeys($config, ['type', 'mode']);
+            $mode = $config['mode'] ?? 'css';
+            if (!in_array($mode, ['css', 'aria'], true)) {
+                throw new InvalidArgumentException('Carve tabs mode must be css or aria.');
+            }
 
-            return array_values(Tabs::extensions(true));
+            return array_values(Tabs::extensions(true, $mode));
         }
         if ($type === 'plantuml') {
             self::acceptKeys($config, ['type', 'css_class']);
@@ -118,14 +124,24 @@ class ExtensionFactory
             return [self::plantuml('plantuml', $class), self::plantuml('puml', $class)];
         }
         if ($type === 'external_links') {
-            self::acceptKeys($config, ['type', 'rel', 'target']);
+            self::acceptKeys($config, ['type', 'rel', 'target', 'nofollow', 'internal_hosts']);
             $target = $config['target'] ?? '_blank';
             $rel = $config['rel'] ?? 'noopener noreferrer';
-            if (!is_string($target) || !is_string($rel)) {
-                throw new InvalidArgumentException('External link target and rel must be strings.');
+            $nofollow = $config['nofollow'] ?? false;
+            $internalHosts = $config['internal_hosts'] ?? [];
+            if (
+                !is_string($target) || !is_string($rel) || !is_bool($nofollow)
+                || !is_array($internalHosts) || !array_is_list($internalHosts)
+                || array_filter($internalHosts, 'is_string') !== $internalHosts
+            ) {
+                throw new InvalidArgumentException('External link target and rel must be strings, nofollow a boolean, and internal_hosts a list of strings.');
             }
 
-            return [Navigation::externalLinks($target, $rel)];
+            if ($internalHosts === []) {
+                return [Navigation::externalLinks($target, $rel, $nofollow)];
+            }
+
+            return [self::externalLinks($target, $rel, $nofollow, $internalHosts)];
         }
         if ($type === 'heading_levels') {
             self::acceptKeys($config, ['type', 'offset']);
@@ -280,6 +296,50 @@ class ExtensionFactory
                 throw new InvalidArgumentException(sprintf('Unknown Carve extension option "%s".', (string)$key));
             }
         }
+    }
+
+    /**
+     * @param string $target
+     * @param string $rel
+     * @param bool $nofollow
+     * @param list<string> $internalHosts
+     *
+     * @return \MarkupCarve\Carve\Extension\ExtensionDefinition
+     */
+    private static function externalLinks(string $target, string $rel, bool $nofollow, array $internalHosts): ExtensionDefinition
+    {
+        $hosts = array_fill_keys(array_map('strtolower', $internalHosts), true);
+        $rels = array_values(array_filter(preg_split('/\s+/', $rel) ?: [], static fn (string $part): bool => $part !== ''));
+        if ($nofollow && !in_array('nofollow', $rels, true)) {
+            $rels[] = 'nofollow';
+        }
+
+        return new ExtensionDefinition('laravel.externalLinks', '1', documentTransform: static function (Node $view) use ($target, $rels, $hosts): Node {
+            NavTree::rewrite($view, static function (Node $node) use ($target, $rels, $hosts): ?array {
+                if (!in_array($node->type, ['link', 'autolink'], true)) {
+                    return null;
+                }
+                $href = $node->f['href'] ?? null;
+                if (!is_string($href) || preg_match('~^https?://~i', $href) !== 1) {
+                    return null;
+                }
+                $host = parse_url($href, PHP_URL_HOST);
+                if (!is_string($host) || isset($hosts[strtolower($host)])) {
+                    return null;
+                }
+                $link = $node->type === 'autolink' ? LinkPolicy::asLink($node) : $node;
+                if ($target === '') {
+                    NavTree::removePair($link, 'target');
+                } else {
+                    NavTree::setPair($link, 'target', $target);
+                }
+                NavTree::setPair($link, 'rel', implode(' ', $rels));
+
+                return $link === $node ? null : [$link];
+            }, true);
+
+            return $view;
+        });
     }
 
     private static function plantuml(string $language, string $class): ExtensionDefinition

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve;
 
+use Closure;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -148,6 +149,16 @@ class LaravelCarveServiceProvider extends ServiceProvider
             throw new InvalidArgumentException('carve.cache must be a configuration array.');
         }
         $options = RenderPolicy::options($config);
+        if (isset($config['include_resolver'])) {
+            $resolver = $config['include_resolver'];
+            if (is_string($resolver) && class_exists($resolver)) {
+                $resolver = $this->app->make($resolver);
+            }
+            if (!is_callable($resolver)) {
+                throw new InvalidArgumentException('carve include_resolver must be an invokable service or callable.');
+            }
+            $options['includes'] = ['resolver' => Closure::fromCallable($resolver)];
+        }
         $extensions = [];
         $extensionConfig = $config['extensions'] ?? [];
         if (!is_array($extensionConfig)) {

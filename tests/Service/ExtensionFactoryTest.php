@@ -104,6 +104,25 @@ class ExtensionFactoryTest extends TestCase
         self::assertStringContainsString('rel="nofollow"', $html);
     }
 
+    public function testExternalLinksSkipsInternalHostsAndAddsNofollow(): void
+    {
+        $extensions = $this->factory->create([
+            'type' => 'external_links',
+            'internal_hosts' => ['example.test'],
+            'nofollow' => true,
+        ]);
+        $html = Carve::render('[inside](https://example.test/a) [outside](https://else.test/a)', ['extensions' => $extensions]);
+        self::assertStringNotContainsString('href="https://example.test/a" target=', $html);
+        self::assertStringContainsString('href="https://else.test/a" rel="noopener noreferrer nofollow" target="_blank"', $html);
+    }
+
+    public function testTabsAriaMode(): void
+    {
+        $extensions = $this->factory->create(['type' => 'tabs', 'mode' => 'aria']);
+        $html = Carve::render(":::: tabs\n::: tab \"One\"\nText\n:::\n::::\n", ['extensions' => $extensions]);
+        self::assertStringContainsString('role="tablist"', $html);
+    }
+
     public function testPlantumlShorthandIsAFencedRenderExtension(): void
     {
         // C2-X-005: both supported fence names have qualified definitions.

@@ -46,13 +46,15 @@ The config file uses snake case for settings and maps them to the Carve option n
 | symbols | symbols | empty map |
 | labels | labels | empty map |
 | social | social | unset |
+| soft_break_mode | softBreak | newline |
+| include_resolver | includes.resolver | unset |
 | extensions | extensions | empty list |
 
-The 0.1 safe_mode, preset, on_disallowed, soft_break_mode, and xhtml keys have no direct 0.2 equivalent. Replace safe_mode with raw_html and url_policy, preset with profile, and review the other old settings against the 0.2 option table. Carve validates option names and values. The default policy keeps raw HTML off and denies unsafe URL schemes. The trusted raw HTML helper enables only rawHtml; it does not loosen the URL policy.
+The 0.1 safe_mode, preset, on_disallowed, and xhtml keys have no direct 0.2 equivalent. Replace safe_mode with raw_html and url_policy, preset with profile, and review the other old settings against the 0.2 option table. `heading_level_shift` was renamed to `heading_levels`. Carve validates option names and values. The default policy keeps raw HTML off and denies unsafe URL schemes. The trusted raw HTML helper enables only rawHtml; it does not loosen the URL policy.
 
 ## Includes and diagnostics
 
-Set include_root to an existing absolute directory. File methods pass FileResolver::forRoot with the file identity to Carve. String methods do not read local files. The result includes Carve diagnostics in warnings and a dependency report. The dependencies report uses relative identities under the configured root. Included files are rechecked before cached file output is reused.
+Set include_root to an existing absolute directory for file-backed includes. File methods pass FileResolver::forRoot with the file identity to Carve. String methods do not read local files unless the profile sets `include_resolver` to a callable or an invokable service class. It receives the engine include request and returns `['text' => $source, 'id' => $stableId]` or an error. A custom resolver takes priority over include_root for that profile and disables adapter caching because external content can change. The result includes Carve diagnostics in warnings and a dependency report for file-root includes. File-backed dependencies are rechecked before cached output is reused.
 
 CarveManager::lint and the lint command call Carve::lint. Findings are Diagnostic objects with code, message, severity, channel, byte offsets, and file. Use code instead of the old rule property. The validation rule uses Carve profile losses and the 0.2 lint catalog.
 

@@ -21,7 +21,7 @@ class ValidCarve implements ValidationRule
     private ?int $maxLength = null;
 
     /**
-     * @param bool $strict If true, parse warnings are also treated as errors
+     * @param bool $strict If true, lint findings are also treated as errors
      * @param string|null $message Custom error message template ({error} placeholder is replaced)
      */
     public function __construct(

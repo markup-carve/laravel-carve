@@ -14,6 +14,22 @@ use Psr\Log\NullLogger;
 
 class CarveConverterTest extends TestCase
 {
+    public function testCustomIncludeResolverBypassesCache(): void
+    {
+        $text = 'First';
+        $resolver = static function (array $request) use (&$text): array {
+            return ['text' => $text, 'id' => 'store:page'];
+        };
+        $converter = new CarveConverter(
+            options: ['includes' => ['resolver' => $resolver]],
+            cache: new Repository(new ArrayStore()),
+        );
+
+        self::assertStringContainsString('First', $converter->toHtml('{{ page.crv }}'));
+        $text = 'Second';
+        self::assertStringContainsString('Second', $converter->toHtml('{{ page.crv }}'));
+    }
+
     public function testTocKeepsInlineHeadingHtml(): void
     {
         $heading = (new CarveConverter())->render('# Hello *world*')->toc()[0];
