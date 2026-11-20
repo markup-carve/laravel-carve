@@ -85,6 +85,19 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testConvertCommandImportsGitHubFlavoredMarkdown(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'carve-import-');
+        self::assertNotFalse($file);
+        file_put_contents($file, "> [!NOTE]\n> Read this.\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file, '--from' => 'gfm']));
+            self::assertStringContainsString("::: note\nRead this.\n:::", Artisan::output());
+        } finally {
+            unlink($file);
+        }
+    }
+
     public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void
     {
         $dir = sys_get_temp_dir() . '/carve-lint-include-' . bin2hex(random_bytes(6));

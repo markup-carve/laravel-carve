@@ -10,6 +10,6 @@ Composer is pinned to one carve-php commit through the VCS repository in compose
 
 The facade and Blade integration render Carve 0.2 source as HTML. Raw HTML is disabled by default. Named profiles, file-backed includes, validation, formatting, lint, HTML import, casts, and caching remain available.
 
-The text, Markdown, and ANSI output methods are still present. They use the Carve writer registry and report that the writer is unavailable until it is registered. Markdown input import is also pending an engine API.
+The text, Markdown, and ANSI output methods use the writers the engine registers. `Carve::fromMarkdown()` imports CommonMark; pass `'gfm'` as the second argument (or `--from=gfm` to `carve:convert`) to import GitHub Flavored Markdown, which turns GitHub alerts into admonitions.
 
 See the [0.2 migration guide](docs/guide/migration.md) for every changed call and setting, and the [documentation index](docs/README.md).
