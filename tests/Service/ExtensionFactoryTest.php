@@ -142,4 +142,56 @@ class ExtensionFactoryTest extends TestCase
         ]);
         self::assertStringContainsString('<pre class="uml">', $html);
     }
+
+    public function testEveryNamedTypeCreatesExtensions(): void
+    {
+        $required = ['default_attributes' => ['defaults' => []], 'fenced_render' => ['language' => 'flow']];
+        foreach (ExtensionFactory::types() as $type) {
+            self::assertNotEmpty($this->factory->create(['type' => $type] + ($required[$type] ?? [])), $type);
+        }
+    }
+
+    public function testNamedTypesRenderThroughTheEngine(): void
+    {
+        $render = fn (array|string $config, string $source): string => Carve::render(
+            $source,
+            ['extensions' => $this->factory->create($config)],
+        );
+
+        self::assertStringContainsString('<details', $render('details', "::: details\nBody\n:::\n"));
+        self::assertStringContainsString('class="mermaid"', $render('mermaid', "```mermaid\nA --> B\n```\n"));
+        self::assertStringContainsString(
+            'href="/wiki/main-page"',
+            $render(['type' => 'wikilinks', 'url_template' => '/wiki/{page}'], 'See :wiki[Main Page].'),
+        );
+        self::assertStringContainsString(
+            'class="anchor"',
+            $render(['type' => 'heading_permalinks', 'css_class' => 'anchor', 'symbol' => '#'], "# Title\n"),
+        );
+        self::assertStringContainsString(
+            'class="toc"',
+            $render(['type' => 'table_of_contents', 'max_level' => 2], "# One\n\n## Two\n"),
+        );
+        self::assertStringContainsString('<img', $render('img_fence', "```img\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>\n```\n"));
+    }
+
+    public function testNamedTypeOptionsAreChecked(): void
+    {
+        foreach (
+            [
+                ['type' => 'code_group', 'misspelled' => true],
+                ['type' => 'table_of_contents', 'max_level' => 'two'],
+                ['type' => 'fenced_render'],
+                ['type' => 'fenced_render', 'language' => 'flow', 'build' => 'x'],
+                ['type' => 'img_fence', 'language' => []],
+            ] as $config
+        ) {
+            try {
+                $this->factory->create($config);
+                self::fail('accepted ' . json_encode($config));
+            } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
 }
