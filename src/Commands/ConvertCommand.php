@@ -15,7 +15,7 @@ class ConvertCommand extends Command
      */
     protected $signature = 'carve:convert
         {path : The Markdown or HTML file to convert}
-        {--from= : markdown or html (guessed from the file extension)}
+        {--from= : markdown, gfm or html (guessed from the file extension)}
         {--output= : Write to this file instead of the console}';
 
     /**
@@ -52,7 +52,7 @@ class ConvertCommand extends Command
 
         try {
             $output = match ($from) {
-                'markdown' => $carve->fromMarkdown($source),
+                'markdown', 'gfm' => $carve->fromMarkdown($source, $from),
                 'html' => $carve->fromHtml($source),
                 default => null,
             };
@@ -63,7 +63,7 @@ class ConvertCommand extends Command
         }
 
         if ($output === null) {
-            $this->components->error('Cannot tell the input format. Pass --from=markdown or --from=html.');
+            $this->components->error('Cannot tell the input format. Pass --from=markdown, --from=gfm or --from=html.');
 
             return self::FAILURE;
         }

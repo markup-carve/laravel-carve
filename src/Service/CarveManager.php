@@ -182,9 +182,19 @@ class CarveManager
         return $this->getConverter($converter)->parse($source);
     }
 
-    public function fromMarkdown(string $source): string
+    /**
+     * @param string $source
+     * @param string $flavor `markdown` (CommonMark) or `gfm`, which also maps GitHub alerts to admonitions.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function fromMarkdown(string $source, string $flavor = 'markdown'): string
     {
-        return Carve::importDocument($source, ['from' => 'markdown'])->source;
+        if (!in_array($flavor, ['markdown', 'gfm'], true)) {
+            throw new InvalidArgumentException(sprintf('Markdown flavor must be "markdown" or "gfm", not "%s".', $flavor));
+        }
+
+        return Carve::importDocument($source, ['from' => $flavor])->source;
     }
 
     public function fromHtml(string $source): string

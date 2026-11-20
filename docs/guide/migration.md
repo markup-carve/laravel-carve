@@ -58,13 +58,13 @@ CarveManager::lint and the lint command call Carve::lint. Findings are Diagnosti
 
 ## Formatting and import
 
-CarveManager::format and the format command call Carve::format. HTML input import calls Carve::importDocument with from set to html. Markdown input import has no Carve API yet; fromMarkdown and the convert command return a clear unavailable error for that input.
+CarveManager::format and the format command call Carve::format. HTML input import calls Carve::importDocument with from set to html. fromMarkdown calls it with from set to markdown, or to gfm when the second argument is `'gfm'`; the convert command takes `--from=gfm` for the same.
 
 ## Output writers
 
-The text, Markdown, and ANSI methods and render command formats remain public. They parse a Carve tree and call Carve::writeTo through a profile writer registry. The engine currently registers only html and carve. Until a text, markdown, or ansi OutputWriter is registered, the corresponding method reports that the writer is not available yet.
+The text, Markdown, and ANSI methods and render command formats remain public. They parse a Carve tree and call Carve::writeTo through a profile writer registry. The engine registers html, carve, markdown, plain text and ansi writers.
 
-A host may provide an OutputWriter instance in a profile's writers list or call registerWriter on the adapter. Each writer receives a resolved Carve Node and an options array. The standard text, Markdown, and ANSI writers are tracked in carve-php issue 5235.
+A host may provide an OutputWriter instance in a profile's writers list or call registerWriter on the adapter. Each writer receives a resolved Carve Node and an options array.
 
 ## Extensions
 

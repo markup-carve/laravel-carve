@@ -129,6 +129,21 @@ class CarveManagerTest extends TestCase
         self::assertSame("= Title\n", $this->manager->fromMarkdown("# Title\n"));
     }
 
+    public function testFromMarkdownWithTheGfmFlavorMapsAnAlertToAnAdmonition(): void
+    {
+        $alert = "> [!TIP]\n> A **bold** reminder.\n";
+
+        self::assertSame("::: tip\nA *bold* reminder.\n:::\n", $this->manager->fromMarkdown($alert, 'gfm'));
+        self::assertStringStartsWith('> [!TIP]', $this->manager->fromMarkdown($alert));
+    }
+
+    public function testFromMarkdownRejectsAnUnknownFlavor(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->manager->fromMarkdown('text', 'djot');
+    }
+
     public function testLintReportsTheRulesCarvePhp0114Added(): void
     {
         $manager = $this->manager;
