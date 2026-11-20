@@ -134,7 +134,16 @@ class CarveManagerTest extends TestCase
         $alert = "> [!TIP]\n> A **bold** reminder.\n";
 
         self::assertSame("::: tip\nA *bold* reminder.\n:::\n", $this->manager->fromMarkdown($alert, 'gfm'));
-        self::assertStringStartsWith('> [!TIP]', $this->manager->fromMarkdown($alert));
+        self::assertSame("::: tip\nA *bold* reminder.\n:::\n", $this->manager->fromMarkdown($alert));
+        self::assertStringStartsWith('> [!TIP]', $this->manager->fromMarkdown($alert, 'markdown'));
+    }
+
+    public function testFromMarkdownReadsGitHubFlavoredTablesByDefault(): void
+    {
+        $markdown = "| a | b |\n|---|--:|\n| 1 | 2 |\n\n- [x] done\n";
+
+        self::assertSame("|= a |={>} b |\n| 1 | 2 |\n\n- [x] done\n", $this->manager->fromMarkdown($markdown));
+        self::assertStringStartsWith('\\| a | b |', $this->manager->fromMarkdown($markdown, 'markdown'));
     }
 
     public function testFromMarkdownRejectsAnUnknownFlavor(): void

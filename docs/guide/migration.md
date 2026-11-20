@@ -58,7 +58,7 @@ CarveManager::lint and the lint command call Carve::lint. Findings are Diagnosti
 
 ## Formatting and import
 
-CarveManager::format and the format command call Carve::format. HTML input import calls Carve::importDocument with from set to html. fromMarkdown calls it with from set to markdown, or to gfm when the second argument is `'gfm'`; the convert command takes `--from=gfm` for the same.
+CarveManager::format and the format command call Carve::format. HTML input import calls Carve::importDocument with from set to html. fromMarkdown calls it with from set to gfm, which is what the 0.1 Markdown importer read, or to markdown (strict CommonMark) when the second argument is `'markdown'`. The convert command reads a `.md` file as gfm; a 0.1 script that passes `--from=markdown` and relies on tables or alerts switches to `--from=gfm`.
 
 ## Output writers
 

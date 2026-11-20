@@ -85,6 +85,21 @@ class CommandsTest extends TestCase
         }
     }
 
+    public function testConvertCommandReadsAMarkdownFileAsGitHubFlavored(): void
+    {
+        $dir = sys_get_temp_dir() . '/carve-import-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        $file = $dir . '/table.md';
+        file_put_contents($file, "| a | b |\n|---|--:|\n| 1 | 2 |\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file]));
+            self::assertStringContainsString("|= a |={>} b |\n| 1 | 2 |", Artisan::output());
+        } finally {
+            unlink($file);
+            rmdir($dir);
+        }
+    }
+
     public function testConvertCommandImportsGitHubFlavoredMarkdown(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'carve-import-');
