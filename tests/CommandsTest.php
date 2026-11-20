@@ -36,7 +36,17 @@ class CommandsTest extends TestCase
 
     public function testPendingRenderCommandWriters(): void
     {
-        self::markTestSkipped('Carve text, Markdown and ANSI command writers are pending carve-php issue 5235 (C2-T-005).');
+        $file = tempnam(sys_get_temp_dir(), 'carve-render-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '*bold*');
+        try {
+            foreach (['text', 'markdown', 'ansi'] as $format) {
+                self::assertSame(0, Artisan::call('carve:render', ['path' => $file, '--format' => $format]));
+                self::assertStringContainsString('bold', Artisan::output());
+            }
+        } finally {
+            unlink($file);
+        }
     }
 
     public function testConvertAndLintHaveUsefulExitStatuses(): void
@@ -64,7 +74,15 @@ class CommandsTest extends TestCase
 
     public function testPendingMarkdownConvertCommand(): void
     {
-        self::markTestSkipped('Carve Markdown import command is pending carve-php issue 5237 (C2-T-003).');
+        $file = tempnam(sys_get_temp_dir(), 'carve-import-');
+        self::assertNotFalse($file);
+        file_put_contents($file, "# Title\n");
+        try {
+            self::assertSame(0, Artisan::call('carve:convert', ['path' => $file, '--from' => 'markdown']));
+            self::assertStringContainsString('= Title', Artisan::output());
+        } finally {
+            unlink($file);
+        }
     }
 
     public function testLintChecksIncludedFilesBelowAnIncludeRoot(): void

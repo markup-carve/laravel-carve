@@ -6,6 +6,7 @@ namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
+use MarkupCarve\Carve\Extension\Navigation;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 use PHPUnit\Framework\TestCase;
@@ -14,7 +15,11 @@ class AuthoringConverterTest extends TestCase
 {
     public function testCacheSeparatesExtensionOptionsAndVersions(): void
     {
-        self::markTestSkipped('Carve document transform extensions are pending carve-php issue 5238 (D4).');
+        $source = '[outside](https://example.test)';
+        $plain = new CarveConverter(cache: new Repository(new ArrayStore()));
+        $linked = new CarveConverter(options: ['extensions' => [Navigation::externalLinks()]], cache: new Repository(new ArrayStore()));
+        self::assertStringNotContainsString('target="_blank"', $plain->toHtml($source));
+        self::assertStringContainsString('target="_blank"', $linked->toHtml($source));
     }
 
     public function testCachePreservesMetadataAndRespectsTtlAndPrefix(): void
@@ -59,12 +64,20 @@ class AuthoringConverterTest extends TestCase
 
     public function testClosureExtensionsDoNotCollideWithoutExplicitVersion(): void
     {
-        self::markTestSkipped('Carve document transform extensions are pending carve-php issue 5238 (D4).');
+        $converter = new CarveConverter(options: ['extensions' => [Navigation::headingLevelShift(1)]]);
+        self::assertStringContainsString('<h2', $converter->toHtml('= Title'));
     }
 
     public function testPendingFileOutputWriters(): void
     {
-        self::markTestSkipped('Carve file output writers are pending carve-php issue 5235 (C2-T-005).');
+        $file = tempnam(sys_get_temp_dir(), 'carve-writer-');
+        self::assertNotFalse($file);
+        file_put_contents($file, '*bold*');
+        try {
+            self::assertSame("bold\n", (new CarveConverter())->renderFileAs($file, 'text'));
+        } finally {
+            unlink($file);
+        }
     }
 
     public function testFileResultKeepsDiagnosticsMetadataAndDependencyInvalidation(): void

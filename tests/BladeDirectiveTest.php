@@ -52,6 +52,11 @@ class BladeDirectiveTest extends TestCase
 
     public function testCarveTextDirectiveOutputsPlainText(): void
     {
-        self::markTestSkipped('Carve text writer is pending carve-php issue 5235 (C2-T-005).');
+        $compiled = Blade::compileString('@carveText($content)');
+        $content = '*bold*';
+        ob_start();
+        eval('?>' . $compiled);
+        $output = ob_get_clean();
+        self::assertSame("bold\n", $output);
     }
 }
