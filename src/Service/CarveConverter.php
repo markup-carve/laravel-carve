@@ -8,6 +8,7 @@ use Composer\InstalledVersions;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\Carve\Output\OutputWriter;
@@ -81,6 +82,25 @@ class CarveConverter implements CarveConverterInterface
         $this->cacheSignature = hash('xxh3', Carve::class . $engineRef . $state . $cacheVersion);
     }
 
+    /**
+     * Carve::render keeps only a bundle's definitions; its document transforms run when passed explicitly.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return list<\MarkupCarve\Carve\Extension\DocumentTransform>
+     */
+    private static function transforms(array $options): array
+    {
+        $transforms = [];
+        foreach (is_array($options['extensions'] ?? null) ? $options['extensions'] : [] as $extension) {
+            if ($extension instanceof Bundle) {
+                array_push($transforms, ...array_values($extension->transforms()));
+            }
+        }
+
+        return $transforms;
+    }
+
     public function registerWriter(OutputWriter $writer): void
     {
         $this->writers->register($writer);
@@ -113,7 +133,7 @@ class CarveConverter implements CarveConverterInterface
         if ($cached instanceof RenderedCarve) {
             return $cached;
         }
-        $result = Carve::renderWithDiagnostics($carve, $this->options);
+        $result = Carve::renderWithDocumentTransforms($carve, self::transforms($this->options), $this->options);
         [$toc, $frontmatter] = $this->metadata(Carve::parse($carve, $this->parseOptions()));
         $rendered = new RenderedCarve(
             $carve,
@@ -158,7 +178,7 @@ class CarveConverter implements CarveConverterInterface
             return $cached['rendered'];
         }
 
-        $result = Carve::renderWithDiagnostics($source, $options);
+        $result = Carve::renderWithDocumentTransforms($source, self::transforms($options), $options);
         $parseOptions = $this->parseOptions($options);
         $tree = Carve::parse($source, $parseOptions);
         $entries = $this->includeRoot === null ? [] : Carve::includeDependencies($tree, $parseOptions);

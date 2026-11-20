@@ -15,6 +15,7 @@ use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\Rules\ValidCarve;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
+use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 
 class CarvePortTest extends TestCase
 {
@@ -147,6 +148,10 @@ class CarvePortTest extends TestCase
 
     public function testDocumentTransformExtensionPendingEngineApi(): void
     {
-        self::markTestSkipped('Carve document transform extension hook is pending the D4 engine API.');
+        // C2-X-053: a bundle's document transform runs on the resolved view before rendering.
+        $extensions = (new ExtensionFactory())->create(['type' => 'default_attributes', 'defaults' => ['table' => ['class' => 'grid']]]);
+        $html = (new CarveConverter(['extensions' => $extensions]))->toHtml("|= a |\n| b |\n");
+
+        self::assertStringContainsString('<table class="grid">', $html);
     }
 }

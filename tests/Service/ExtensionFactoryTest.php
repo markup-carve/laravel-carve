@@ -10,6 +10,7 @@ use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Node;
+use MarkupCarve\LaravelCarve\Service\CarveConverter;
 use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -183,6 +184,7 @@ class ExtensionFactoryTest extends TestCase
                 ['type' => 'table_of_contents', 'max_level' => 'two'],
                 ['type' => 'fenced_render'],
                 ['type' => 'fenced_render', 'language' => 'flow', 'build' => 'x'],
+                ['type' => 'fenced_render', 'language' => 42],
                 ['type' => 'img_fence', 'language' => []],
             ] as $config
         ) {
@@ -193,5 +195,18 @@ class ExtensionFactoryTest extends TestCase
                 self::addToAssertionCount(1);
             }
         }
+    }
+
+    public function testBundleTransformsRunThroughTheConverter(): void
+    {
+        $converter = new CarveConverter([
+
+            'extensions' => $this->factory->create([
+                'type' => 'default_attributes',
+                'defaults' => ['image' => ['loading' => 'lazy']],
+            ]),
+        ]);
+
+        self::assertStringContainsString('loading="lazy"', $converter->toHtml('![a](b.png)'));
     }
 }

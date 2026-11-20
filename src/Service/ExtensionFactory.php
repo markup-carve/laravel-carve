@@ -31,6 +31,8 @@ use MarkupCarve\Carve\Extension\Wikilinks;
 use MarkupCarve\Carve\Node;
 use ReflectionFunction;
 use ReflectionNamedType;
+use ReflectionType;
+use ReflectionUnionType;
 
 class ExtensionFactory
 {
@@ -205,8 +207,16 @@ class ExtensionFactory
             $name = is_string($key) ? lcfirst(str_replace('_', '', ucwords($key, '_'))) : '';
             $parameter = $parameters[$name] ?? null;
             $kind = $parameter?->getType();
-            $typeName = $kind instanceof ReflectionNamedType ? $kind->getName() : 'mixed';
-            if ($parameter === null || $typeName === Closure::class) {
+            $typeNames = match (true) {
+                $kind instanceof ReflectionNamedType => [$kind->getName()],
+                $kind instanceof ReflectionUnionType => array_map(
+                    static fn (ReflectionType $member): string => $member instanceof ReflectionNamedType
+                        ? $member->getName() : 'mixed',
+                    $kind->getTypes(),
+                ),
+                default => ['mixed'],
+            };
+            if ($parameter === null || in_array(Closure::class, $typeNames, true)) {
                 throw new InvalidArgumentException(sprintf(
                     'Unknown Carve extension option "%s" for "%s".',
                     (string)$key,
@@ -216,7 +226,8 @@ class ExtensionFactory
             if ($value === null && $kind !== null && !$kind->allowsNull()) {
                 throw new InvalidArgumentException(sprintf('Carve extension option "%s" must not be null.', $key));
             }
-            if ($value !== null && $kind !== null && !self::matches($value, $typeName)) {
+            $matching = array_filter($typeNames, static fn (string $typeName): bool => self::matches($value, $typeName));
+            if ($value !== null && $matching === []) {
                 throw new InvalidArgumentException(sprintf(
                     'Carve extension option "%s" for "%s" must be %s.',
                     $key,
@@ -250,6 +261,7 @@ class ExtensionFactory
             'bool' => is_bool($value),
             'int' => is_int($value),
             'string' => is_string($value),
+            'null' => $value === null,
             'mixed' => true,
             default => false,
         };
