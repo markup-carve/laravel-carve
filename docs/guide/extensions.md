@@ -12,7 +12,7 @@ Options are the parameters of the carve-php factory each name calls, written in 
 | `fenced_render` | `FencedRender::bundle()` | `language` (required), `css_class`, `tag`, `content_mode`, `wrap_in_figure`, `figure_class`, `label` |
 | `plantuml` | host fenced renderer for `plantuml` and `puml` | `css_class` |
 | `autolink` | `Navigation::autolink()` | `allowed_schemes` |
-| `external_links` | `Navigation::externalLinks()` | `target`, `rel` |
+| `external_links` | `Navigation::externalLinks()` | `target`, `rel`, `nofollow`, `internal_hosts` |
 | `heading_levels` | `Navigation::headingLevelShift()` | `offset` |
 | `heading_numbers` | `Navigation::headingNumbers()` | `min_level`, `label`, `crossref` |
 | `heading_permalinks` | `Navigation::headingPermalinks()` | `symbol`, `css_class`, `aria_label`, `levels`, `prepend`, `show_on_hover`, `copy_to_clipboard` |
@@ -29,7 +29,7 @@ Options are the parameters of the carve-php factory each name calls, written in 
 | `index_terms` | `IndexTerms::bundle()` | `backref_label` |
 | `math_block` | `MathBlock::bundle()` | `language` |
 | `smart_quotes` | `SmartQuotes::bundle()` | `locale`, `open_double_quote`, `close_double_quote`, `open_single_quote`, `close_single_quote` |
-| `tabs` | the standard Carve tabs definitions | none |
+| `tabs` | the standard Carve tabs definitions | `mode` (`css` or `aria`) |
 | `wikilinks` | `Wikilinks::bundle()` | `url_template` (`{page}` is the slug), `css_class`, `new_window` |
 
 `ExtensionFactory::types()` returns every name.

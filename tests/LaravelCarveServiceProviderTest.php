@@ -54,6 +54,18 @@ class LaravelCarveServiceProviderTest extends TestCase
         self::assertSame("Hello world!\n", Carve::toText('Hello *world*!'));
     }
 
+    public function testSoftBreakAndCustomIncludeResolver(): void
+    {
+        config()->set('carve.converters.custom', [
+            'soft_break_mode' => 'br',
+            'include_resolver' => static fn (array $request): array => ['text' => "Included text\n", 'id' => 'store:page'],
+        ]);
+        $this->app()->forgetInstance(CarveManager::class);
+        $manager = $this->app()->make(CarveManager::class);
+        self::assertStringContainsString('<br', $manager->toHtml("first\nsecond", 'custom'));
+        self::assertStringContainsString('Included text', $manager->toHtml('{{ page.crv }}', 'custom'));
+    }
+
     public function testDefaultConfigHasSafeMode(): void
     {
         /** @var \Illuminate\Contracts\Config\Repository $config */

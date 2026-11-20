@@ -17,11 +17,14 @@ return [
             'profile' => 'full',
             'mode' => 'interactive',
             'smart_typography' => true,
+            'soft_break_mode' => 'newline',
             'source_lines' => false,
             'sections' => true,
             'heading_ids' => 'keep-case',
             'symbols' => [],
             'labels' => [],
+            // Optional callable or invokable service returning text and a stable id for include requests.
+            // 'include_resolver' => App\Carve\IncludeResolver::class,
             // ExtensionDefinition, ExtensionProvider, or the supported 'tabs' name.
             'extensions' => [],
             // OutputWriter instances for targets such as text, markdown and ansi.
