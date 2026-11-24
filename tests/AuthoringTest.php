@@ -150,6 +150,16 @@ class AuthoringTest extends TestCase
         self::assertStringContainsString('href="#Part"', $html);
     }
 
+    public function testHeadingShiftMovesTocLevels(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $toc = Carve::render("= Title\n\n====== *Deep*")->toc();
+        self::assertSame([2, 7], array_column($toc, 'level'));
+        self::assertSame('<strong>Deep</strong>', $toc[1]['html']);
+    }
+
     public function testHeadingShiftReachesMarkdownButNotText(): void
     {
         config()->set('carve.converters.default.heading_shift', 1);

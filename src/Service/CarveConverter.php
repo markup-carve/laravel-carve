@@ -272,6 +272,8 @@ class CarveConverter implements CarveConverterInterface
     {
         $toc = [];
         $frontmatter = null;
+        $shift = $this->options['headingShift'] ?? 0;
+        $shift = is_int($shift) ? $shift : 0;
         $stack = [$tree];
         while ($stack !== []) {
             $node = array_pop($stack);
@@ -281,7 +283,8 @@ class CarveConverter implements CarveConverterInterface
                 $id = $node->f['generatedId'] ?? '';
                 $toc[] = [
 
-                    'level' => is_int($level) ? $level : 1,
+                    // The page renders the shifted level (C2-H-208), so the TOC reports it.
+                    'level' => (is_int($level) ? $level : 1) + $shift,
                     'text' => $text,
                     'html' => $this->headingHtml($tree, $node, $text),
                     'id' => is_string($id) ? $id : '',
@@ -327,6 +330,8 @@ class CarveConverter implements CarveConverterInterface
         $single->children = [$heading];
         $options = $this->options;
         $options['sections'] = false;
+        // A shifted level above 6 renders as a div, which the match below would miss.
+        unset($options['headingShift']);
         $html = Carve::render($single, $options);
         if (preg_match('~<h[1-6](?:\\s[^>]*)?>(.*?)</h[1-6]>~s', $html, $match) === 1) {
             return $match[1];
