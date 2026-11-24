@@ -47,6 +47,7 @@ final class RenderPolicy
             'source_lines' => 'sourceLines',
             'sections' => 'sections',
             'heading_ids' => 'headingIds',
+            'heading_shift' => 'headingShift',
             'strict_losses' => 'strictLosses',
             'symbols' => 'symbols',
             'labels' => 'labels',

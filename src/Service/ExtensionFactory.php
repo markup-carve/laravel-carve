@@ -82,7 +82,7 @@ class ExtensionFactory
     {
         $types = array_merge(
             array_keys(self::NAMED),
-            ['external_links', 'heading_levels', 'img_fence', 'plantuml', 'tabs', 'wikilinks'],
+            ['external_links', 'img_fence', 'plantuml', 'tabs', 'wikilinks'],
         );
         sort($types);
 
@@ -144,13 +144,9 @@ class ExtensionFactory
             return [self::externalLinks($target, $rel, $nofollow, $internalHosts)];
         }
         if ($type === 'heading_levels') {
-            self::acceptKeys($config, ['type', 'offset']);
-            $offset = $config['offset'] ?? 0;
-            if (!is_int($offset)) {
-                throw new InvalidArgumentException('Heading level offset must be an integer.');
-            }
-
-            return [Navigation::headingLevelShift($offset)];
+            throw new InvalidArgumentException(
+                'Carve 0.2 has no heading level extension; set the profile\'s heading_shift instead.',
+            );
         }
 
         if ($type === 'wikilinks') {

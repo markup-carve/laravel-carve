@@ -21,6 +21,8 @@ return [
             'source_lines' => false,
             'sections' => true,
             'heading_ids' => 'keep-case',
+            // Moves every heading down 0 to 5 levels, for a page whose layout writes the title as the <h1>.
+            'heading_shift' => 0,
             'symbols' => [],
             'labels' => [],
             // Optional callable or invokable service returning text and a stable id for include requests.
