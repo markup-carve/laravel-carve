@@ -42,6 +42,7 @@ The config file uses snake case for settings and maps them to the Carve option n
 | source_lines | sourceLines | false |
 | sections | sections | true |
 | heading_ids | headingIds | keep-case |
+| heading_shift | headingShift | 0 |
 | strict_losses | strictLosses | false |
 | symbols | symbols | empty map |
 | labels | labels | empty map |
@@ -50,7 +51,7 @@ The config file uses snake case for settings and maps them to the Carve option n
 | include_resolver | includes.resolver | unset |
 | extensions | extensions | empty list |
 
-The 0.1 safe_mode, preset, on_disallowed, and xhtml keys have no direct 0.2 equivalent. Replace safe_mode with raw_html and url_policy, preset with profile, and review the other old settings against the 0.2 option table. `heading_level_shift` was renamed to `heading_levels`. Carve validates option names and values. The default policy keeps raw HTML off and denies unsafe URL schemes. The trusted raw HTML helper enables only rawHtml; it does not loosen the URL policy.
+The 0.1 safe_mode, preset, on_disallowed, and xhtml keys have no direct 0.2 equivalent. Replace safe_mode with raw_html and url_policy, preset with profile, and review the other old settings against the 0.2 option table. The 0.1 `heading_level_shift` extension is the 0.2 render option `heading_shift` (`headingShift`, 0 to 5): with 1, `=` renders as `<h2>`, ids and links keep their values, and the level options of `table_of_contents`, `heading_permalinks` and `heading_numbers` name the shifted levels. The `heading_levels` extension name is refused. Carve validates option names and values. The default policy keeps raw HTML off and denies unsafe URL schemes. The trusted raw HTML helper enables only rawHtml; it does not loosen the URL policy.
 
 ## Includes and diagnostics
 

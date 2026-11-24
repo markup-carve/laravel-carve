@@ -64,8 +64,8 @@ class AuthoringConverterTest extends TestCase
 
     public function testClosureExtensionsDoNotCollideWithoutExplicitVersion(): void
     {
-        $converter = new CarveConverter(options: ['extensions' => [Navigation::headingLevelShift(1)]]);
-        self::assertStringContainsString('<h2', $converter->toHtml('= Title'));
+        $converter = new CarveConverter(options: ['extensions' => [Navigation::headingNumbers()]]);
+        self::assertStringContainsString('section-number', $converter->toHtml('= Title'));
     }
 
     public function testPendingFileOutputWriters(): void

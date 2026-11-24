@@ -110,9 +110,10 @@ class CarveManagerTest extends TestCase
             $manager->lint($source),
         );
 
-        self::assertSame(['deprecated-cell-alignment'], $rules("|=< a |= b |\n| 1 | 2 |\n")); // U-056
+        // U-056, U-044: both rules default to `upgrade` (lint-rules.json), so a plain lint leaves them off.
+        self::assertSame([], $rules("|=< a |= b |\n| 1 | 2 |\n"));
         self::assertSame([], $rules("|={<} a |= b |\n| 1 | 2 |\n"));
-        self::assertSame(['thematic-break-spelling'], $rules("a\n\n---\n\nb\n"));
+        self::assertSame([], $rules("a\n\n---\n\nb\n"));
         self::assertSame([], $rules("a\n\n%% carve-lint-disable-next-line thematic-break-spelling\n---\n\nb\n"));
     }
 

@@ -486,7 +486,11 @@ class CarveConverter implements CarveConverterInterface
 
         $writerOptions = $target === $format && !in_array($target, ['markdown', 'plain', 'ansi'], true)
             ? $options
-            : array_intersect_key($options, array_flip(['smartTypography', 'strictLosses', 'urlPolicy']));
+            : array_intersect_key($options, array_flip(array_merge(
+                ['smartTypography', 'strictLosses', 'urlPolicy'],
+                // C2-H-209: the Markdown export reads headingShift; plain text and ANSI refuse it.
+                $target === 'markdown' ? ['headingShift'] : [],
+            )));
 
         return Carve::writeTo($target, $tree, $writerOptions, $this->writers);
     }

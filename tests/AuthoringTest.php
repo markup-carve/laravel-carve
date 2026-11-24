@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\Factory;
 use InvalidArgumentException;
+use MarkupCarve\Carve\OptionError;
 use MarkupCarve\LaravelCarve\Casts\AsCarve;
 use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\RenderedCarve;
@@ -137,12 +138,45 @@ class AuthoringTest extends TestCase
         self::assertSame("**bold**\n", Carve::toMarkdown('*bold*'));
     }
 
-    public function testHeadingLevelTransformPendingCarve(): void
+    public function testHeadingShiftSetting(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $html = Carve::toHtml("= Title\n\n== Part\n\nSee </#Part>.");
+        self::assertStringContainsString('<h2>Title</h2>', $html);
+        self::assertStringContainsString('<h3>Part</h3>', $html);
+        self::assertStringContainsString('id="Part"', $html);
+        self::assertStringContainsString('href="#Part"', $html);
+    }
+
+    public function testHeadingShiftReachesMarkdownButNotText(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        self::assertSame("## Title\n", Carve::toMarkdown('= Title'));
+        self::assertSame("Title\n", Carve::toText('= Title'));
+    }
+
+    public function testHeadingShiftOutOfRangeFails(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 6);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $this->expectException(OptionError::class);
+        $this->expectExceptionMessage('headingShift');
+        Carve::toHtml('= Title');
+    }
+
+    public function testRemovedHeadingLevelsExtensionPointsToHeadingShift(): void
     {
         config()->set('carve.converters.default.extensions', [['type' => 'heading_levels', 'offset' => 1]]);
         app()->forgetInstance(CarveManager::class);
         Carve::clearResolvedInstances();
-        self::assertStringContainsString('<h2', Carve::toHtml('= Title'));
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('heading_shift');
+        Carve::toHtml('= Title');
     }
 
     public function testUnknownExtensionConfigurationFailsExplicitly(): void

@@ -13,7 +13,6 @@ Options are the parameters of the carve-php factory each name calls, written in 
 | `plantuml` | host fenced renderer for `plantuml` and `puml` | `css_class` |
 | `autolink` | `Navigation::autolink()` | `allowed_schemes` |
 | `external_links` | `Navigation::externalLinks()` | `target`, `rel`, `nofollow`, `internal_hosts` |
-| `heading_levels` | `Navigation::headingLevelShift()` | `offset` |
 | `heading_numbers` | `Navigation::headingNumbers()` | `min_level`, `label`, `crossref` |
 | `heading_permalinks` | `Navigation::headingPermalinks()` | `symbol`, `css_class`, `aria_label`, `levels`, `prepend`, `show_on_hover`, `copy_to_clipboard` |
 | `heading_reference` | `Navigation::headingReference()` | `css_class` |
