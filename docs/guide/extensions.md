@@ -33,4 +33,4 @@ Options are the parameters of the carve-php factory each name calls, written in 
 
 `ExtensionFactory::types()` returns every name.
 
-Mentions and tags are core 0.2 options, not extensions: set the profile's `social` setting. See the [migration guide](migration.md#extensions) and the [Carve extension guide](https://github.com/markup-carve/carve-php/blob/next2/docs/README.md#extensions-provisional).
+Mentions and tags are core 0.2 options, not extensions: set the profile's `social` setting. See the [migration guide](migration.md#extensions) and the [Carve extension guide](https://github.com/markup-carve/carve-php/blob/main/docs/README.md#extensions-provisional).
