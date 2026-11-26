@@ -31,7 +31,7 @@ features:
     details: Different converter configurations for different contexts (user content, admin, CMS)
   - icon: "\uD83E\uDDE9"
     title: Extensible
-    details: Enable carve-php's bundled extensions per profile \u2014 autolink, mentions, TOC, tabs, math, citations, and more
+    details: Enable carve-php's bundled extensions per profile - autolink, mentions, TOC, tabs, math, citations, and more
   - icon: "\u2705"
     title: Validation
     details: ValidCarve rule for request validation of Carve markup input
