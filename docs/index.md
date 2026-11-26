@@ -22,7 +22,7 @@ hero:
 features:
   - icon: "\u2694\uFE0F"
     title: Blade Directives
-    details: "@carve, @carveRaw, @carveText \u2014 render Carve markup directly in your Blade views"
+    details: "@carve, @carveRaw, @carveText render Carve markup directly in your Blade views"
   - icon: "\uD83D\uDD12"
     title: Safe Mode
     details: Built-in XSS protection enabled by default for untrusted user input
