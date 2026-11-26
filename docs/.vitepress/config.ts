@@ -1,16 +1,26 @@
 import { defineConfig } from 'vitepress'
 import { carveMarkdown } from 'carve-grammars/shiki'
 
+const docsBase = process.env.DOCS_BASE ?? '/laravel-carve/'
+const docsVersionText = process.env.DOCS_VERSION_TEXT
+const docsLatestBase = process.env.DOCS_LATEST_BASE ?? '/laravel-carve/'
+const docsOtherBase = process.env.DOCS_OTHER_BASE ?? '/laravel-carve/0.2/'
+const siteUrl = (base: string) => `https://markup-carve.github.io${base}`
+
 export default defineConfig({
   title: 'Laravel Carve',
   description: 'Carve markup language integration for Laravel — Blade directives, services, validation, and caching',
 
-  base: '/laravel-carve/',
+  base: docsBase,
 
   cleanUrls: true,
 
   head: [
-    ['link', { rel: 'icon', href: '/laravel-carve/favicon.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `${docsBase}favicon.svg`, type: 'image/svg+xml' }],
+    // The unreleased series must not compete with the released docs in search results.
+    // Marks a versioned build, so the theme styles only the version menu as a switch.
+    ...(docsVersionText ? [['meta', { name: 'docs-version', content: docsVersionText }] as [string, Record<string, string>]] : []),
+    ...(process.env.VITE_DOCS_SERIES === 'dev' ? [['meta', { name: 'robots', content: 'noindex' }] as [string, Record<string, string>]] : []),
   ],
 
   markdown: {
@@ -35,6 +45,13 @@ export default defineConfig({
           { text: 'Issues', link: 'https://github.com/markup-carve/laravel-carve/issues' },
         ],
       },
+      ...(docsVersionText ? [{
+        text: docsVersionText,
+        items: [
+          { text: process.env.DOCS_LATEST_LABEL ?? '0.1 (latest)', link: siteUrl(docsLatestBase), target: '_self' },
+          { text: process.env.DOCS_OTHER_LABEL ?? '0.2 (dev)', link: siteUrl(docsOtherBase), target: '_self' },
+        ],
+      }] : []),
     ],
 
     sidebar: {
@@ -77,7 +94,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/markup-carve/laravel-carve/edit/main/docs/:path',
+      pattern: `https://github.com/markup-carve/laravel-carve/edit/${process.env.DOCS_EDIT_BRANCH ?? '0.1'}/docs/:path`,
       text: 'Edit this page on GitHub',
     },
 
