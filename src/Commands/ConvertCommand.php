@@ -6,6 +6,7 @@ namespace MarkupCarve\LaravelCarve\Commands;
 
 use Illuminate\Console\Command;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
+use Throwable;
 
 class ConvertCommand extends Command
 {
@@ -14,7 +15,7 @@ class ConvertCommand extends Command
      */
     protected $signature = 'carve:convert
         {path : The Markdown or HTML file to convert}
-        {--from= : markdown or html (guessed from the file extension)}
+        {--from= : gfm, markdown (strict CommonMark) or html (guessed from the file extension; .md reads as gfm)}
         {--output= : Write to this file instead of the console}';
 
     /**
@@ -37,7 +38,7 @@ class ConvertCommand extends Command
         }
 
         $from = $this->option('from') ?: match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
-            'md', 'markdown' => 'markdown',
+            'md', 'markdown' => 'gfm',
             'html', 'htm' => 'html',
             default => null,
         };
@@ -49,14 +50,20 @@ class ConvertCommand extends Command
             return self::FAILURE;
         }
 
-        $output = match ($from) {
-            'markdown' => $carve->fromMarkdown($source),
-            'html' => $carve->fromHtml($source),
-            default => null,
-        };
+        try {
+            $output = match ($from) {
+                'markdown', 'gfm' => $carve->fromMarkdown($source, $from),
+                'html' => $carve->fromHtml($source),
+                default => null,
+            };
+        } catch (Throwable $exception) {
+            $this->components->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
 
         if ($output === null) {
-            $this->components->error('Cannot tell the input format. Pass --from=markdown or --from=html.');
+            $this->components->error('Cannot tell the input format. Pass --from=markdown, --from=gfm or --from=html.');
 
             return self::FAILURE;
         }

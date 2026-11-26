@@ -6,4 +6,5 @@ composer.lock
 .phpcs.cache
 docs/node_modules
 docs/.vitepress/dist/
+docs/.vitepress/dist-versioned/
 docs/.vitepress/cache/

@@ -1,26 +1,15 @@
-# Laravel Carve
+# Laravel Carve 0.2
 
-[![CI](https://github.com/markup-carve/laravel-carve/actions/workflows/ci.yml/badge.svg)](https://github.com/markup-carve/laravel-carve/actions/workflows/ci.yml)
-[![PHP](https://img.shields.io/packagist/php-v/markup-carve/laravel-carve)](https://packagist.org/packages/markup-carve/laravel-carve)
-[![PHPStan](https://img.shields.io/badge/PHPStan-level%209-brightgreen.svg)](https://phpstan.org/)
-[![License](https://img.shields.io/packagist/l/markup-carve/laravel-carve)](LICENSE)
+Laravel integration for the unreleased Carve 0.2 PHP engine. This branch targets Carve on the engine's next2 branch. It has no registry release.
 
-Laravel integration for Carve through carve-php. It provides Blade rendering, services, validation, and caching. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+## Install from Git
 
-## Install
+Composer is pinned to one carve-php commit through the VCS repository in composer.json. In an application, require this package from its next2 branch and keep the same engine pin. PHP 8.2, the DOM extension, and Laravel 12 or 13 are required.
 
-```sh
-composer require markup-carve/laravel-carve
-```
+## Use
 
-## Usage
+The facade and Blade integration render Carve 0.2 source as HTML. Raw HTML is disabled by default. Named profiles, file-backed includes, validation, formatting, lint, HTML import, casts, and caching remain available.
 
-```blade
-@carve('# Hello')
-```
+The text, Markdown, and ANSI output methods use the writers the engine registers. `Carve::fromMarkdown()` imports GitHub Flavored Markdown, as in 0.1: tables, task lists, strikethrough and GitHub alerts (as admonitions) convert. `carve:convert` reads a `.md` file the same way. Pass `'markdown'` as the second argument (or `--from=markdown`) for strict CommonMark, which keeps a GFM table as escaped text.
 
-## Documentation
-
-- [Carve documentation](https://markup-carve.github.io/carve/)
-- [Documentation index](docs/README.md)
-- [Laravel guide](docs/guide/index.md)
+See the [0.2 migration guide](docs/guide/migration.md) for every changed call and setting, and the [documentation index](docs/README.md).

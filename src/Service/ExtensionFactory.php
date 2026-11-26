@@ -4,297 +4,366 @@ declare(strict_types=1);
 
 namespace MarkupCarve\LaravelCarve\Service;
 
-use Illuminate\Support\Str;
+use Closure;
 use InvalidArgumentException;
-use MarkupCarve\Carve\Extension\ExtensionInterface;
-use ReflectionClass;
-use Throwable;
+use MarkupCarve\Carve\Extension\Citations;
+use MarkupCarve\Carve\Extension\Claim;
+use MarkupCarve\Carve\Extension\CodeCallouts;
+use MarkupCarve\Carve\Extension\CodeGroup;
+use MarkupCarve\Carve\Extension\ColorSwatch;
+use MarkupCarve\Carve\Extension\Details;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\FencedRender;
+use MarkupCarve\Carve\Extension\Glossary;
+use MarkupCarve\Carve\Extension\ImgFence;
+use MarkupCarve\Carve\Extension\IndexTerms;
+use MarkupCarve\Carve\Extension\LinkPolicy;
+use MarkupCarve\Carve\Extension\ListTable;
+use MarkupCarve\Carve\Extension\MathBlock;
+use MarkupCarve\Carve\Extension\Navigation;
+use MarkupCarve\Carve\Extension\NavTree;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Extension\SemanticSpan;
+use MarkupCarve\Carve\Extension\SmartQuotes;
+use MarkupCarve\Carve\Extension\Spoiler;
+use MarkupCarve\Carve\Extension\Tabs;
+use MarkupCarve\Carve\Extension\Transforms;
+use MarkupCarve\Carve\Extension\Wikilinks;
+use MarkupCarve\Carve\Node;
+use ReflectionFunction;
+use ReflectionNamedType;
+use ReflectionType;
+use ReflectionUnionType;
 
 class ExtensionFactory
 {
     /**
-     * @var string
-     */
-    public const TYPE_ADMONITION = 'admonition';
-
-    /**
-     * @var string
-     */
-    public const TYPE_ASCII_HEADING_IDS = 'ascii_heading_ids';
-
-    /**
-     * @var string
-     */
-    public const TYPE_AUTOLINK = 'autolink';
-
-    /**
-     * @var string
-     */
-    public const TYPE_CITATIONS = 'citations';
-
-    /**
-     * @var string
-     */
-    public const TYPE_CODE_CALLOUTS = 'code_callouts';
-
-    /**
-     * @var string
-     */
-    public const TYPE_CODE_GROUP = 'code_group';
-
-    /**
-     * @var string
-     */
-    public const TYPE_COLOR_SWATCH = 'color_swatch';
-
-    /**
-     * @var string
-     */
-    public const TYPE_DEFAULT_ATTRIBUTES = 'default_attributes';
-
-    /**
-     * @var string
-     */
-    public const TYPE_DETAILS = 'details';
-
-    /**
-     * @var string
-     */
-    public const TYPE_EXTERNAL_LINKS = 'external_links';
-
-    /**
-     * @var string
-     */
-    public const TYPE_FENCED_RENDER = 'fenced_render';
-
-    /**
-     * @var string
-     */
-    public const TYPE_FRONTMATTER = 'frontmatter';
-
-    /**
-     * @var string
-     */
-    public const TYPE_GLOSSARY = 'glossary';
-
-    /**
-     * @var string
-     */
-    public const TYPE_HEADING_LEVEL_SHIFT = 'heading_level_shift';
-
-    /**
-     * @var string
-     */
-    public const TYPE_HEADING_NUMBERS = 'heading_numbers';
-
-    /**
-     * @var string
-     */
-    public const TYPE_HEADING_PERMALINKS = 'heading_permalinks';
-
-    /**
-     * @var string
-     */
-    public const TYPE_HEADING_REFERENCE = 'heading_reference';
-
-    /**
-     * @var string
-     */
-    public const TYPE_IMG_FENCE = 'img_fence';
-
-    /**
-     * @var string
-     */
-    public const TYPE_INDEX = 'index';
-
-    /**
-     * @var string
-     */
-    public const TYPE_INLINE_FOOTNOTES = 'inline_footnotes';
-
-    /**
-     * @var string
-     */
-    public const TYPE_LIST_TABLE = 'list_table';
-
-    /**
-     * @var string
-     */
-    public const TYPE_LOWERCASE_HEADING_IDS = 'lowercase_heading_ids';
-
-    /**
-     * @var string
-     */
-    public const TYPE_MATH_BLOCK = 'math_block';
-
-    /**
-     * @var string
-     */
-    public const TYPE_MENTIONS = 'mentions';
-
-    /**
-     * @var string
-     */
-    public const TYPE_MERMAID = 'mermaid';
-
-    /**
-     * @var string
-     */
-    public const TYPE_PLANTUML = 'plantuml';
-
-    /**
-     * @var string
-     */
-    public const TYPE_PLUS_BULLET = 'plus_bullet';
-
-    /**
-     * @var string
-     */
-    public const TYPE_SEMANTIC_SPAN = 'semantic_span';
-
-    /**
-     * @var string
-     */
-    public const TYPE_SMART_QUOTES = 'smart_quotes';
-
-    /**
-     * @var string
-     */
-    public const TYPE_SPOILER = 'spoiler';
-
-    /**
-     * @var string
-     */
-    public const TYPE_TAB_NORMALIZE = 'tab_normalize';
-
-    /**
-     * @var string
-     */
-    public const TYPE_TABLE_OF_CONTENTS = 'table_of_contents';
-
-    /**
-     * @var string
-     */
-    public const TYPE_TABS = 'tabs';
-
-    /**
-     * @var string
-     */
-    public const TYPE_TOC_PLACEMENT = 'toc_placement';
-
-    /**
-     * @var string
-     */
-    public const TYPE_WIKILINKS = 'wikilinks';
-
-    /**
-     * All supported extension type identifiers.
+     * Engine extension factories by configuration name. Options bind by name:
+     * `css_class` in the configuration is the factory's `$cssClass` parameter.
      *
-     * @return array<string>
+     * @var array<string, array{0: class-string, 1: string}>
+     */
+    private const NAMED = [
+        'abc' => [FencedRender::class, 'abc'],
+        'autolink' => [Navigation::class, 'autolink'],
+        'chart' => [FencedRender::class, 'chart'],
+        'citations' => [Citations::class, 'bundle'],
+        'code_callouts' => [CodeCallouts::class, 'bundle'],
+        'code_group' => [CodeGroup::class, 'bundle'],
+        'color_swatch' => [ColorSwatch::class, 'bundle'],
+        'd2' => [FencedRender::class, 'd2'],
+        'default_attributes' => [Transforms::class, 'defaultAttributes'],
+        'details' => [Details::class, 'bundle'],
+        'fenced_render' => [FencedRender::class, 'bundle'],
+        'glossary' => [Glossary::class, 'bundle'],
+        'graphviz' => [FencedRender::class, 'graphviz'],
+        'heading_numbers' => [Navigation::class, 'headingNumbers'],
+        'heading_permalinks' => [Navigation::class, 'headingPermalinks'],
+        'heading_reference' => [Navigation::class, 'headingReference'],
+        'index_terms' => [IndexTerms::class, 'bundle'],
+        'link_policy' => [Navigation::class, 'linkPolicy'],
+        'list_table' => [ListTable::class, 'bundle'],
+        'math_block' => [MathBlock::class, 'bundle'],
+        'mermaid' => [FencedRender::class, 'mermaid'],
+        'semantic_span' => [SemanticSpan::class, 'bundle'],
+        'smart_quotes' => [SmartQuotes::class, 'bundle'],
+        'spoiler' => [Spoiler::class, 'bundle'],
+        'table_of_contents' => [Navigation::class, 'tableOfContents'],
+        'toc_placement' => [Navigation::class, 'tocPlacement'],
+        'vega_lite' => [FencedRender::class, 'vegaLite'],
+        'wavedrom' => [FencedRender::class, 'wavedrom'],
+    ];
+
+    /**
+     * @return list<string>
      */
     public static function types(): array
     {
-        return [
-            self::TYPE_ADMONITION,
-            self::TYPE_ASCII_HEADING_IDS,
-            self::TYPE_AUTOLINK,
-            self::TYPE_CITATIONS,
-            self::TYPE_CODE_CALLOUTS,
-            self::TYPE_CODE_GROUP,
-            self::TYPE_COLOR_SWATCH,
-            self::TYPE_DEFAULT_ATTRIBUTES,
-            self::TYPE_DETAILS,
-            self::TYPE_EXTERNAL_LINKS,
-            self::TYPE_FENCED_RENDER,
-            self::TYPE_FRONTMATTER,
-            self::TYPE_GLOSSARY,
-            self::TYPE_HEADING_LEVEL_SHIFT,
-            self::TYPE_HEADING_NUMBERS,
-            self::TYPE_HEADING_PERMALINKS,
-            self::TYPE_HEADING_REFERENCE,
-            self::TYPE_IMG_FENCE,
-            self::TYPE_INDEX,
-            self::TYPE_INLINE_FOOTNOTES,
-            self::TYPE_LIST_TABLE,
-            self::TYPE_LOWERCASE_HEADING_IDS,
-            self::TYPE_MATH_BLOCK,
-            self::TYPE_MENTIONS,
-            self::TYPE_MERMAID,
-            self::TYPE_PLANTUML,
-            self::TYPE_PLUS_BULLET,
-            self::TYPE_SEMANTIC_SPAN,
-            self::TYPE_SMART_QUOTES,
-            self::TYPE_SPOILER,
-            self::TYPE_TAB_NORMALIZE,
-            self::TYPE_TABLE_OF_CONTENTS,
-            self::TYPE_TABS,
-            self::TYPE_TOC_PLACEMENT,
-            self::TYPE_WIKILINKS,
-        ];
+        $types = array_merge(
+            array_keys(self::NAMED),
+            ['external_links', 'img_fence', 'plantuml', 'tabs', 'wikilinks'],
+        );
+        sort($types);
+
+        return $types;
     }
 
     /**
-     * Create a carve extension instance from a config entry.
+     * @param \MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider|array<mixed, mixed>|string $config
      *
-     * Accepts either a shorthand string (`'autolink'`) or a full array
-     * (`['type' => 'autolink', ...]`). Only options explicitly set in the
-     * config are forwarded — unspecified options keep the library defaults.
-     * Returns null for unknown types.
+     * @throws \InvalidArgumentException
      *
-     * @param array<string, mixed>|string $config
+     * @return list<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
-    public function create(ExtensionInterface|array|string $config): ?ExtensionInterface
+    public function create(ExtensionDefinition|ExtensionProvider|array|string $config): array
     {
-        if ($config instanceof ExtensionInterface) {
-            return $config;
+        if ($config instanceof ExtensionDefinition || $config instanceof ExtensionProvider) {
+            return [$config];
         }
         if (is_string($config)) {
             $config = ['type' => $config];
         }
         $type = $config['type'] ?? null;
-        if (!is_string($type)) {
-            return null;
+        if ($type === 'tabs') {
+            self::acceptKeys($config, ['type', 'mode']);
+            $mode = $config['mode'] ?? 'css';
+            if (!in_array($mode, ['css', 'aria'], true)) {
+                throw new InvalidArgumentException('Carve tabs mode must be css or aria.');
+            }
+
+            return array_values(Tabs::extensions(true, $mode));
         }
-        unset($config['type']);
-        if ($type === 'mermaid' || $type === 'plantuml') {
-            $config += ['language' => $type === 'mermaid' ? 'mermaid' : ['plantuml', 'puml']];
-            $type = 'fenced_render';
+        if ($type === 'plantuml') {
+            self::acceptKeys($config, ['type', 'css_class']);
+            $class = $config['css_class'] ?? 'plantuml';
+            if (!is_string($class) || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_-]*$/', $class)) {
+                throw new InvalidArgumentException('Carve plantuml css_class must be one CSS class name.');
+            }
+
+            return [self::plantuml('plantuml', $class), self::plantuml('puml', $class)];
         }
-        if ($type === 'fenced_render') {
-            $config += ['language' => 'mermaid'];
+        if ($type === 'external_links') {
+            self::acceptKeys($config, ['type', 'rel', 'target', 'nofollow', 'internal_hosts']);
+            $target = $config['target'] ?? '_blank';
+            $rel = $config['rel'] ?? 'noopener noreferrer';
+            $nofollow = $config['nofollow'] ?? false;
+            $internalHosts = $config['internal_hosts'] ?? [];
+            if (
+                !is_string($target) || !is_string($rel) || !is_bool($nofollow)
+                || !is_array($internalHosts) || !array_is_list($internalHosts)
+                || array_filter($internalHosts, 'is_string') !== $internalHosts
+            ) {
+                throw new InvalidArgumentException('External link target and rel must be strings, nofollow a boolean, and internal_hosts a list of strings.');
+            }
+
+            if ($internalHosts === []) {
+                return [Navigation::externalLinks($target, $rel, $nofollow)];
+            }
+
+            return [self::externalLinks($target, $rel, $nofollow, $internalHosts)];
         }
-        $class = is_a($type, ExtensionInterface::class, true)
-            ? $type
-            : 'MarkupCarve\\Carve\\Extension\\' . Str::studly($type) . 'Extension';
-        if (!is_a($class, ExtensionInterface::class, true)) {
-            return null;
+        if ($type === 'heading_levels') {
+            throw new InvalidArgumentException(
+                'Carve 0.2 has no heading level extension; set the profile\'s heading_shift instead.',
+            );
         }
-        if ($type === 'wikilinks' && isset($config['url_template']) && is_string($config['url_template'])) {
-            $config['url_generator'] = (new WikiLinkUrlTemplate($config['url_template']))(...);
-            unset($config['url_template']);
+
+        if ($type === 'wikilinks') {
+            self::acceptKeys($config, ['type', 'url_template', 'css_class', 'new_window']);
+            $template = $config['url_template'] ?? null;
+            if ($template !== null && !is_string($template)) {
+                throw new InvalidArgumentException('Wikilinks url_template must be a string.');
+            }
+            $class = $config['css_class'] ?? 'wikilink';
+            $newWindow = $config['new_window'] ?? false;
+            if (!is_string($class) || !is_bool($newWindow)) {
+                throw new InvalidArgumentException('Wikilinks css_class must be a string and new_window a boolean.');
+            }
+            $url = $template === null ? null : static fn (string $page): string => str_replace(
+                '{page}',
+                Wikilinks::slug($page),
+                $template,
+            );
+
+            return [Wikilinks::bundle($url, $class, $newWindow)];
         }
-        $aliases = match ($type) {
-            'heading_permalinks' => ['class' => 'css_class'],
-            'table_of_contents' => ['toc_class' => 'css_class'],
-            'wikilinks' => ['link_class' => 'css_class'],
-            'mentions' => ['user_url_template' => 'mention_url', 'user_class' => 'mention_class'],
-            default => [],
-        };
+        if ($type === 'img_fence') {
+            self::acceptKeys($config, ['type', 'language']);
+            $languages = $config['language'] ?? ['img', 'image'];
+            if (is_string($languages)) {
+                $languages = [$languages];
+            }
+            if (!is_array($languages) || $languages === [] || array_filter($languages, 'is_string') !== $languages) {
+                throw new InvalidArgumentException('img_fence language must be a fence name or a list of them.');
+            }
+
+            // carve-php ships the img fence renderer apart from its definition.
+            return array_values(array_map(
+                static fn (string $language): ExtensionDefinition => ImgFence::definition($language)
+                    ->withRenderer(ImgFence::render(...))
+                    ->withBuildTimeRenderer(ImgFence::render(...)),
+                $languages,
+            ));
+        }
+        if (is_string($type) && isset(self::NAMED[$type])) {
+            return [self::named($type, $config)];
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Carve 0.2 extension "%s" is not available yet.',
+            is_string($type) ? $type : get_debug_type($type),
+        ));
+    }
+
+    /**
+     * @param string $type
+     * @param array<mixed, mixed> $config
+     *
+     * @throws \InvalidArgumentException
+     */
+    private static function named(string $type, array $config): ExtensionDefinition|ExtensionProvider
+    {
+        /** @var callable $callable */
+        $callable = self::NAMED[$type];
+        $factory = Closure::fromCallable($callable);
         $arguments = [];
-        foreach ($config as $key => $value) {
-            $arguments[Str::camel($aliases[$key] ?? $key)] = $value;
+        $parameters = [];
+        foreach ((new ReflectionFunction($factory))->getParameters() as $parameter) {
+            $parameters[$parameter->getName()] = $parameter;
         }
-        $constructor = (new ReflectionClass($class))->getConstructor();
-        $parameters = $constructor === null ? [] : array_map(static fn ($parameter): string => $parameter->getName(), $constructor->getParameters());
-        foreach (array_keys($arguments) as $argument) {
-            if (!in_array($argument, $parameters, true)) {
-                throw new InvalidArgumentException(sprintf('Unknown option "%s" for Carve extension "%s".', $argument, $type));
+        foreach ($config as $key => $value) {
+            if ($key === 'type') {
+                continue;
+            }
+            $name = is_string($key) ? lcfirst(str_replace('_', '', ucwords($key, '_'))) : '';
+            $parameter = $parameters[$name] ?? null;
+            $kind = $parameter?->getType();
+            $typeNames = match (true) {
+                $kind instanceof ReflectionNamedType => [$kind->getName()],
+                $kind instanceof ReflectionUnionType => array_map(
+                    static fn (ReflectionType $member): string => $member instanceof ReflectionNamedType
+                        ? $member->getName() : 'mixed',
+                    $kind->getTypes(),
+                ),
+                default => ['mixed'],
+            };
+            if ($parameter === null || in_array(Closure::class, $typeNames, true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Unknown Carve extension option "%s" for "%s".',
+                    (string)$key,
+                    $type,
+                ));
+            }
+            if ($value === null && $kind !== null && !$kind->allowsNull()) {
+                throw new InvalidArgumentException(sprintf('Carve extension option "%s" must not be null.', $key));
+            }
+            $matching = array_filter($typeNames, static fn (string $typeName): bool => self::matches($value, $typeName));
+            if ($value !== null && $matching === []) {
+                throw new InvalidArgumentException(sprintf(
+                    'Carve extension option "%s" for "%s" must be %s.',
+                    $key,
+                    $type,
+                    (string)$kind,
+                ));
+            }
+            $arguments[$name] = $value;
+        }
+        foreach ($parameters as $name => $parameter) {
+            if (!$parameter->isOptional() && !array_key_exists($name, $arguments)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Carve extension "%s" needs the option "%s".',
+                    $type,
+                    strtolower((string)preg_replace('/[A-Z]/', '_$0', $name)),
+                ));
             }
         }
-        try {
-            return new $class(...$arguments);
-        } catch (Throwable $exception) {
-            throw new InvalidArgumentException(sprintf('Invalid options for Carve extension "%s": %s', $type, $exception->getMessage()), 0, $exception);
+        $extension = $factory(...$arguments);
+        if (!$extension instanceof ExtensionDefinition && !$extension instanceof ExtensionProvider) {
+            throw new InvalidArgumentException(sprintf('Carve extension "%s" returned no definition.', $type));
         }
+
+        return $extension;
+    }
+
+    private static function matches(mixed $value, string $type): bool
+    {
+        return match ($type) {
+            'array' => is_array($value),
+            'bool' => is_bool($value),
+            'int' => is_int($value),
+            'string' => is_string($value),
+            'null' => $value === null,
+            'mixed' => true,
+            default => false,
+        };
+    }
+
+    /**
+     * @param array<mixed, mixed> $config
+     * @param list<string> $accepted
+     *
+     * @throws \InvalidArgumentException
+     */
+    private static function acceptKeys(array $config, array $accepted): void
+    {
+        foreach (array_keys($config) as $key) {
+            if (!is_string($key) || !in_array($key, $accepted, true)) {
+                throw new InvalidArgumentException(sprintf('Unknown Carve extension option "%s".', (string)$key));
+            }
+        }
+    }
+
+    /**
+     * @param string $target
+     * @param string $rel
+     * @param bool $nofollow
+     * @param list<string> $internalHosts
+     *
+     * @return \MarkupCarve\Carve\Extension\ExtensionDefinition
+     */
+    private static function externalLinks(string $target, string $rel, bool $nofollow, array $internalHosts): ExtensionDefinition
+    {
+        $hosts = array_fill_keys(array_map('strtolower', $internalHosts), true);
+        $rels = array_values(array_filter(preg_split('/\s+/', $rel) ?: [], static fn (string $part): bool => $part !== ''));
+        if ($nofollow && !in_array('nofollow', $rels, true)) {
+            $rels[] = 'nofollow';
+        }
+
+        return new ExtensionDefinition('laravel.externalLinks', '1', documentTransform: static function (Node $view) use ($target, $rels, $hosts): Node {
+            NavTree::rewrite($view, static function (Node $node) use ($target, $rels, $hosts): ?array {
+                if (!in_array($node->type, ['link', 'autolink'], true)) {
+                    return null;
+                }
+                $href = $node->f['href'] ?? null;
+                if (!is_string($href) || preg_match('~^https?://~i', $href) !== 1) {
+                    return null;
+                }
+                $host = parse_url($href, PHP_URL_HOST);
+                if (!is_string($host) || isset($hosts[strtolower($host)])) {
+                    return null;
+                }
+                $link = $node->type === 'autolink' ? LinkPolicy::asLink($node) : $node;
+                if ($target === '') {
+                    NavTree::removePair($link, 'target');
+                } else {
+                    NavTree::setPair($link, 'target', $target);
+                }
+                NavTree::setPair($link, 'rel', implode(' ', $rels));
+
+                return $link === $node ? null : [$link];
+            }, true);
+
+            return $view;
+        });
+    }
+
+    private static function plantuml(string $language, string $class): ExtensionDefinition
+    {
+        return new ExtensionDefinition(
+            'laravel.plantuml.' . $language,
+            '1',
+            [],
+            matcher: ['form' => 'fence', 'name' => $language],
+            transform: static function (Claim $claim): Node {
+                $node = new Node('block_extension', []);
+                $node->f = [
+                    'name' => 'laravel.plantuml.' . $claim->name,
+                    'version' => '1',
+                    'slots' => [],
+                    'props' => ['body' => $claim->source['body'] ?? ''],
+                    'fallback' => [$claim->copyNode()],
+                ];
+
+                return $node;
+            },
+            renderer: static function (Node $node, RenderHost $host) use ($class): string {
+                $props = $node->f['props'] ?? [];
+                $body = is_array($props) ? ($props['body'] ?? '') : '';
+
+                return '<pre class="' . RenderHost::escapeAttribute($class) . '">'
+                    . RenderHost::escapeText(is_string($body) ? $body : '') . '</pre>';
+            },
+        );
     }
 }

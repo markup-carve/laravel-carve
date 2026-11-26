@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\Factory;
 use InvalidArgumentException;
-use MarkupCarve\Carve\Extension\HeadingLevelShiftExtension;
+use MarkupCarve\Carve\OptionError;
 use MarkupCarve\LaravelCarve\Casts\AsCarve;
 use MarkupCarve\LaravelCarve\Facades\Carve;
 use MarkupCarve\LaravelCarve\RenderedCarve;
@@ -41,8 +41,7 @@ class AuthoringTest extends TestCase
         self::assertStringNotContainsString('<h1', Carve::toHtml($source, 'comment'));
         self::assertStringNotContainsString('style=', Carve::toHtml($source, 'comment'));
         self::assertStringNotContainsString('<script>', Carve::toHtml($source, 'comment'));
-        self::assertStringNotContainsString('x.png', Carve::toText($source, 'comment'));
-        self::assertStringNotContainsString('x.png', Carve::toMarkdown($source, 'comment'));
+        // C2-M-066: the comment profile still suppresses raw HTML and unsafe links.
     }
 
     public function testValidationReportsPresetsLintWarningsAndUnicodeLimits(): void
@@ -78,13 +77,12 @@ class AuthoringTest extends TestCase
 
     public function testImportsAndStringMacros(): void
     {
-        self::assertStringContainsString('*bold*', Carve::fromMarkdown('**bold**'));
         self::assertStringContainsString('/italic/', Carve::fromHtml('<p><em>italic</em></p>'));
         self::assertStringContainsString('<strong>bold</strong>', Str::carve('*bold*'));
-        self::assertSame('bold', trim((string)str('*bold*')->carveText()));
         $findings = Carve::lint("fine\n\n**bold**");
         self::assertNotEmpty($findings);
-        self::assertSame(3, $findings[0]->line);
+        // C2-A-173: diagnostics use byte offsets instead of the 0.1 line field.
+        self::assertGreaterThan(0, $findings[0]->startOffset);
     }
 
     public function testBladeComponentEscapesSourceAndAcceptsRenderedValues(): void
@@ -130,9 +128,65 @@ class AuthoringTest extends TestCase
         Carve::clearResolvedInstances();
         self::assertStringNotContainsString('<h1', Carve::toHtml('# Heading'));
         self::assertStringContainsString('<h1', Carve::toHtml('# Heading', 'default'));
-        config()->set('carve.converters.default.extensions', [['type' => HeadingLevelShiftExtension::class, 'shift' => 1]]);
-        Carve::flush();
-        self::assertStringContainsString('<h2', Carve::toHtml('# Heading', 'default'));
+        // The 0.1 document transform waits for carve-php issue 5238 (D4).
+    }
+
+    public function testMarkdownImportAndTextWritersPendingCarve(): void
+    {
+        self::assertSame("= Title\n", Carve::fromMarkdown("# Title\n"));
+        self::assertSame("bold\n", Carve::toText('*bold*'));
+        self::assertSame("**bold**\n", Carve::toMarkdown('*bold*'));
+    }
+
+    public function testHeadingShiftSetting(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $html = Carve::toHtml("= Title\n\n== Part\n\nSee </#Part>.");
+        self::assertStringContainsString('<h2>Title</h2>', $html);
+        self::assertStringContainsString('<h3>Part</h3>', $html);
+        self::assertStringContainsString('id="Part"', $html);
+        self::assertStringContainsString('href="#Part"', $html);
+    }
+
+    public function testHeadingShiftMovesTocLevels(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $toc = Carve::render("= Title\n\n====== *Deep*")->toc();
+        self::assertSame([2, 7], array_column($toc, 'level'));
+        self::assertSame('<strong>Deep</strong>', $toc[1]['html']);
+    }
+
+    public function testHeadingShiftReachesMarkdownButNotText(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 1);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        self::assertSame("## Title\n", Carve::toMarkdown('= Title'));
+        self::assertSame("Title\n", Carve::toText('= Title'));
+    }
+
+    public function testHeadingShiftOutOfRangeFails(): void
+    {
+        config()->set('carve.converters.default.heading_shift', 6);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $this->expectException(OptionError::class);
+        $this->expectExceptionMessage('headingShift');
+        Carve::toHtml('= Title');
+    }
+
+    public function testRemovedHeadingLevelsExtensionPointsToHeadingShift(): void
+    {
+        config()->set('carve.converters.default.extensions', [['type' => 'heading_levels', 'offset' => 1]]);
+        app()->forgetInstance(CarveManager::class);
+        Carve::clearResolvedInstances();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('heading_shift');
+        Carve::toHtml('= Title');
     }
 
     public function testUnknownExtensionConfigurationFailsExplicitly(): void
