@@ -364,6 +364,26 @@ class TiptapTest extends TestCase
         (new AsCarveDocument())->set($this->model(), 'body', self::lossyDocument(), []);
     }
 
+    public function testStoredLossyDocumentDoesNotBlockOtherUpdates(): void
+    {
+        Schema::create('posts', static function (Blueprint $table): void {
+            $table->id();
+            $table->string('title')->nullable();
+            $table->json('body')->nullable();
+        });
+        $json = json_encode(self::lossyDocument(), JSON_THROW_ON_ERROR);
+        $model = $this->model();
+        $model->getConnection()->table('posts')->insert(['id' => 1, 'body' => $json]);
+
+        $fresh = $model->newQuery()->whereKey(1)->firstOrFail();
+        $body = $fresh->getAttribute('body');
+        $this->assertInstanceOf(CarveDocument::class, $body);
+        $fresh->setAttribute('title', 'Renamed');
+        $fresh->save();
+
+        $this->assertSame($json, $model->newQuery()->whereKey(1)->firstOrFail()->getRawOriginal('body'));
+    }
+
     public function testEloquentModelRoundTrip(): void
     {
         Schema::create('posts', static function (Blueprint $table): void {

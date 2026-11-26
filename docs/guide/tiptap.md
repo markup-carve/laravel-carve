@@ -44,7 +44,7 @@ $post->body->lint();        // Carve lint findings
 
 ## Saves that would lose data
 
-On every save the cast converts the document once. Two things stop a silent loss:
+Each time a document is assigned to the attribute, the cast converts it once. Two things stop a silent loss:
 
 - A node or mark with no Carve node, such as a `mention` node from an extension the bridge does not know, throws `InvalidArgumentException`. Map it with `carve.tiptap.mapping`.
 - An attribute the bridge does not keep, such as `textAlign` on a paragraph, raises the signal in `carve.tiptap.on_loss`:
@@ -52,10 +52,10 @@ On every save the cast converts the document once. Two things stop a silent loss
 | Value | Effect |
 |---|---|
 | `exception` (default) | throws `MarkupCarve\LaravelCarve\Tiptap\LossyTiptapDocument`; `$exception->ignored` lists each attribute with its JSON pointer |
-| `event` | stores the document and dispatches `MarkupCarve\LaravelCarve\Events\TiptapAttributesIgnored` with the model, the attribute key and the list |
-| `ignore` | stores the document |
+| `event` | keeps the document and dispatches `MarkupCarve\LaravelCarve\Events\TiptapAttributesIgnored` with the model, the attribute key and the list |
+| `ignore` | keeps the document |
 
-The document is stored unchanged in every case. The signal tells you that its Carve exports drop those attributes.
+The signal fires on assignment, before `save()`, so the exception leaves the attribute as it was and the event does not mean the row was written. A kept document is stored unchanged; the signal tells you that its Carve exports drop those attributes. Reading a stored lossy document and saving the model for another change does not fire it again.
 
 ```php
 use Illuminate\Support\Facades\Event;

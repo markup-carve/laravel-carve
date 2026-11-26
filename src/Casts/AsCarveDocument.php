@@ -24,7 +24,7 @@ use Stringable;
  *     $post->body->html(); // rendered through the "comment" profile
  *     $post->body->carve(); // canonical Carve source
  *
- * On save the document is converted once: a node with no Carve node throws, and attributes the bridge does not keep
+ * On assignment the document is converted once: a node with no Carve node throws, and attributes the bridge does not keep
  * raise the `carve.tiptap.on_loss` signal.
  *
  * @implements \Illuminate\Contracts\Database\Eloquent\CastsAttributes<\MarkupCarve\LaravelCarve\Tiptap\CarveDocument|null, \MarkupCarve\LaravelCarve\Tiptap\CarveDocument|array<string, mixed>|\Stringable|string|null>
@@ -38,6 +38,11 @@ class AsCarveDocument implements CastsAttributes
      * @var array<string>
      */
     private const LOSS_SIGNALS = ['exception', 'event', 'ignore'];
+
+    /**
+     * Eloquent re-runs `set()` on a cached cast object at every save; the loss check must run only on assignment.
+     */
+    public bool $withoutObjectCaching = true;
 
     public function __construct(private readonly ?string $profile = null)
     {

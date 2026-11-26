@@ -7,8 +7,8 @@ namespace MarkupCarve\LaravelCarve\Events;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Dispatched by `AsCarveDocument` when `carve.tiptap.on_loss` is `event` and a saved document carries attributes
- * the Carve bridge does not keep. The document is stored unchanged.
+ * Dispatched by `AsCarveDocument` when `carve.tiptap.on_loss` is `event` and a document assigned to the attribute
+ * carries attributes the Carve bridge does not keep. It fires on assignment, before any save.
  */
 class TiptapAttributesIgnored
 {
