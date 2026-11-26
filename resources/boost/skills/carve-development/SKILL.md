@@ -5,7 +5,7 @@ description: Use Laravel Carve 0.2 in Blade, services, validation, authoring, an
 
 # Laravel Carve 0.2
 
-This branch uses the unreleased Carve engine pinned to a next2 commit. Read docs/guide/migration.md before changing source, profiles, or integrations.
+This branch uses the unreleased Carve engine pinned to a carve-php main commit. Read docs/guide/migration.md before changing source, profiles, or integrations.
 
 Carve 0.2 is not Markdown. Strong uses a single asterisk and emphasis uses a slash. Bare underline, strike, and highlight delimiters are literal; use braced forms. Lists and headings after text generally need blank lines. Tables use native header cells and braced alignment. Run the 0.2 upgrade tool on old source and review each SILENT result.
 

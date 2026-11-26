@@ -1,10 +1,10 @@
 # Laravel Carve 0.2 migration
 
-This branch is for the unreleased Carve engine. Composer uses the engine's next2 commit through a VCS repository and a commit-pinned dev-next2 constraint. The package needs PHP 8.2, DOM, and Laravel 12 or 13. There is no registry package to install for this branch.
+This branch is for the unreleased Carve engine. Composer uses an engine commit on main through a VCS repository and a commit-pinned dev-main constraint. The package needs PHP 8.2, DOM, and Laravel 12 or 13. There is no registry package to install for this branch.
 
 ## Source documents
 
-Run the Carve 0.2 upgrade tool from carve-js next2 on each existing source document, then run its 0.2 lint and format checks. Review the HTML for every SILENT upgrade row. The [specification upgrade guide](https://github.com/markup-carve/carve/blob/next2/spec/0.2/UPGRADING.md) explains changes in block interruption, lists, tables, inline spans, breaks, and raw HTML. This package has no tracked Carve source files.
+Run the Carve 0.2 upgrade tool from carve-js main on each existing source document, then run its 0.2 lint and format checks. Review the HTML for every SILENT upgrade row. The [specification upgrade guide](https://github.com/markup-carve/carve/blob/main/spec/0.2/UPGRADING.md) explains changes in block interruption, lists, tables, inline spans, breaks, and raw HTML. This package has no tracked Carve source files.
 
 For a new source, separate a heading after paragraph text with a blank line. Use native header cells in tables and braced alignment. A 0.2 example:
 

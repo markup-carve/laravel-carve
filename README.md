@@ -1,10 +1,10 @@
 # Laravel Carve 0.2
 
-Laravel integration for the unreleased Carve 0.2 PHP engine. This branch targets Carve on the engine's next2 branch. It has no registry release.
+Laravel integration for the unreleased Carve 0.2 PHP engine. This branch targets Carve 0.2 on the engine's main branch. It has no registry release.
 
 ## Install from Git
 
-Composer is pinned to one carve-php commit through the VCS repository in composer.json. In an application, require this package from its next2 branch and keep the same engine pin. PHP 8.2, the DOM extension, and Laravel 12 or 13 are required.
+Composer is pinned to one carve-php commit through the VCS repository in composer.json. In an application, require this package from its main branch and keep the same engine pin. PHP 8.2, the DOM extension, and Laravel 12 or 13 are required.
 
 ## Use
 
