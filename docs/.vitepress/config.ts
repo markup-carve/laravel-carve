@@ -70,6 +70,7 @@ export default defineConfig({
             { text: 'Service Usage', link: '/guide/service-usage' },
             { text: 'Validation', link: '/guide/validation' },
             { text: 'Authoring in Laravel', link: '/guide/authoring' },
+            { text: 'Tiptap Columns', link: '/guide/tiptap' },
           ],
         },
         {

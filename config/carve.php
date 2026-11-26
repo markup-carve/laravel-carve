@@ -36,6 +36,16 @@ return [
         'trusted' => ['raw_html' => true],
     ],
 
+    // Tiptap (ProseMirror) JSON columns, see AsCarveDocument and TiptapConverter.
+    'tiptap' => [
+        // What a save does when the document has attributes Carve does not keep: 'exception', 'event' or 'ignore'.
+        'on_loss' => 'exception',
+        // The application's own nodes and marks, as the carve-php bridge's `mapping` option.
+        'mapping' => [],
+        // Converter profile for html(), plainText() and markdown(); null uses the default.
+        'converter' => null,
+    ],
+
     'cache' => [
         'enabled' => false,
         'store' => null,

@@ -14,3 +14,5 @@ Publish config/carve.php with the package's carve-config publish tag. A converte
     ],
 
 The [migration guide](migration.md#rendering-and-profiles) lists every 0.2 key and its mapping. include_root is an absolute trusted root for file rendering. cache.enabled, cache.store, cache.ttl, and cache.prefix control Laravel caching.
+
+tiptap.on_loss (`exception`, `event` or `ignore`), tiptap.mapping and tiptap.converter configure Tiptap JSON columns; see [Tiptap columns](tiptap.md#configuration).
