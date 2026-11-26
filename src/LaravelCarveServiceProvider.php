@@ -27,6 +27,7 @@ use MarkupCarve\LaravelCarve\Service\CarveConverterInterface;
 use MarkupCarve\LaravelCarve\Service\CarveManager;
 use MarkupCarve\LaravelCarve\Service\ExtensionFactory;
 use MarkupCarve\LaravelCarve\Service\RenderPolicy;
+use MarkupCarve\LaravelCarve\Tiptap\TiptapConverter;
 use MarkupCarve\LaravelCarve\View\CarveEngine;
 use MarkupCarve\LaravelCarve\View\Components\Carve as CarveComponent;
 use Psr\Log\LoggerInterface;
@@ -76,6 +77,23 @@ class LaravelCarveServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(CarveManager::class, 'carve');
+
+        $this->app->singleton(TiptapConverter::class, static function (Container $app): TiptapConverter {
+            /** @var \Illuminate\Contracts\Config\Repository $config */
+            $config = $app->make(ConfigRepository::class);
+            $mapping = $config->get('carve.tiptap.mapping', []);
+            $converter = $config->get('carve.tiptap.converter');
+            if (!is_array($mapping) || ($converter !== null && !is_string($converter))) {
+                throw new InvalidArgumentException('carve.tiptap.mapping must be an array and carve.tiptap.converter a profile name or null.');
+            }
+
+            /** @var \MarkupCarve\LaravelCarve\Service\CarveManager $manager */
+            $manager = $app->make(CarveManager::class);
+
+            /** @var array<string, mixed> $mapping */
+            return new TiptapConverter($manager, $mapping, $converter);
+        });
+        $this->app->alias(TiptapConverter::class, 'carve.tiptap');
 
         $this->app->bind(CarveConverterInterface::class, static function (Container $app): CarveConverterInterface {
             /** @var \MarkupCarve\LaravelCarve\Service\CarveManager $manager */
