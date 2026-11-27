@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Laravel Carve 0.2
   text: Carve 0.2 for Laravel
-  tagline: Blade directives, converter profiles, validation, Tiptap columns and caching for the unreleased Carve 0.2 engine
+  tagline: Blade directives, converter profiles, validation, Tiptap columns and caching for the Carve 0.2 engine
   image:
     src: /logo.svg
     alt: Laravel Carve
