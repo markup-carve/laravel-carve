@@ -2,19 +2,28 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-11-27
+
 ### Breaking
 
-- Rename the Carve 0.2 engine imports to `MarkupCarve\Carve\Carve` and pin the renamed engine at `db1624daf9`. Remove temporary `Carve2` names and 0.1 code paths.
+- Port Laravel rendering, parsing, includes, lint, HTML import, formatting, validation, and result metadata to the Carve 0.2 engine (carve-php `main`). Engine imports are `MarkupCarve\Carve\Carve`; the temporary `Carve2` names and 0.1 code paths are gone.
+- Replace 0.1 safe mode and preset settings with Carve 0.2 raw HTML, URL policy, and profile options.
+- Accept Carve 0.2 extension definitions and providers. Former 0.1 extensions that carve-php 0.2 does not ship fail explicitly.
+- Replace the `heading_levels` extension with the `heading_shift` profile setting; the old name fails with a pointer to the setting (#66).
 - Remove the 0.1 docs grammar dependency; code blocks use the built-in plain-text fallback until a 0.2 grammar is available.
 
-### Changed
+### Fixes
 
-- Port Laravel rendering, parsing, includes, lint, HTML import, formatting, validation, and result metadata to the commit-pinned Carve2 engine on next2.
-- Replace 0.1 safe mode and preset settings with Carve2 raw HTML, URL policy, and profile options.
-- Route text, Markdown, and ANSI output through the Carve2 writer registry. Missing writers report an availability error until registered.
-- Accept Carve2 extension definitions and providers, including the standard tabs and PlantUML shorthands. Former 0.1 extensions fail explicitly in the 0.2 path.
-- Keep Markdown input import visible with a clear unavailable error while the 0.2 importer API is pending.
+- `RenderedCarve::toc()` reports the shifted heading levels when a profile sets `heading_shift` (#66).
+- A profile with a custom include resolver skips the adapter cache, so changed external content is not served stale (#62).
 
+### Improvements
+
+- Add the `AsCarveDocument` cast and `TiptapConverter` service for Tiptap (ProseMirror) JSON columns, with the `carve.tiptap.on_loss`, `carve.tiptap.mapping`, and `carve.tiptap.converter` config keys (#70).
+- Profiles name the carve-php 0.2 extensions again (`details`, `code_group`, `mermaid`, `table_of_contents`, `wikilinks`, and more), with array options bound to the factory parameters; `ExtensionFactory::types()` lists them (#59).
+- Restore the `soft_break_mode` and `include_resolver` profile options and more `external_links` and `tabs` options (#62).
+- `fromMarkdown()` and `.md` conversion read GitHub Flavored Markdown by default; `markdown` stays available for strict CommonMark, and `carve:convert` accepts `--from=gfm` (#61, #63).
+- Text, Markdown, and ANSI output use the engine's built-in writers (#57, #61).
 
 ## 0.1.10 - 2026-11-12
 
