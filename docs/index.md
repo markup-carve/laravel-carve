@@ -13,13 +13,13 @@ hero:
       text: Get Started
       link: /guide/
     - theme: alt
-      text: Migrating from 0.1
+      text: Upgrade from 0.1
       link: /guide/migration
     - theme: alt
       text: Extensions
       link: /guide/extensions
     - theme: alt
-      text: View on GitHub
+      text: GitHub
       link: https://github.com/markup-carve/laravel-carve
 
 features:
