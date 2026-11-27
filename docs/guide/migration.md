@@ -1,6 +1,6 @@
 # Laravel Carve 0.2 migration
 
-This branch is for the unreleased Carve engine. Composer uses an engine commit on main through a VCS repository and a commit-pinned dev-main constraint. The package needs PHP 8.2, DOM, and Laravel 12 or 13. There is no registry package to install for this branch.
+This release targets the Carve 0.2 engine. Require it with `composer require markup-carve/laravel-carve:^0.2`. The package needs PHP 8.2, DOM, and Laravel 12 or 13.
 
 ## Source documents
 
