@@ -52,6 +52,7 @@ final class RenderPolicy
             'symbols' => 'symbols',
             'labels' => 'labels',
             'social' => 'social',
+            'renderers' => 'renderers',
             'soft_break_mode' => 'softBreak',
         ];
         foreach (array_keys($config) as $key) {

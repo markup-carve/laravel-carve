@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Register the standard table of contents renderers that carve-php main requires; move carve-php to main.
 - Port Laravel rendering, parsing, includes, lint, HTML import, formatting, validation, and result metadata to the commit-pinned Carve2 engine on next2.
 - Replace 0.1 safe mode and preset settings with Carve2 raw HTML, URL policy, and profile options.
 - Route text, Markdown, and ANSI output through the Carve2 writer registry. Missing writers report an availability error until registered.
