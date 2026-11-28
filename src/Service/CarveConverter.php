@@ -9,6 +9,8 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\Extension\Bundle;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\Carve\Output\OutputWriter;
@@ -105,6 +107,37 @@ class CarveConverter implements CarveConverterInterface
         return $transforms;
     }
 
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return array<string, mixed>
+     */
+    private static function withTocRenderers(array $options): array
+    {
+        $defaults = [];
+        foreach (is_array($options['extensions'] ?? null) ? $options['extensions'] : [] as $extension) {
+            if ($extension instanceof ExtensionDefinition) {
+                $definitions = [$extension];
+            } elseif ($extension instanceof ExtensionProvider) {
+                $definitions = $extension->definitions();
+            } else {
+                continue;
+            }
+            foreach ($definitions as $definition) {
+                if (($definition->name === 'carve.toc' || $definition->name === 'carve.tocPlacement') && $definition->renderer === null) {
+                    $defaults[$definition->name] = 'standard';
+                }
+            }
+        }
+        if ($defaults !== [] && is_array($options['renderers'] ?? null)) {
+            $options['renderers'] = array_replace($defaults, $options['renderers']);
+        } elseif ($defaults !== [] && ($options['renderers'] ?? null) === null) {
+            $options['renderers'] = $defaults;
+        }
+
+        return $options;
+    }
+
     public function registerWriter(OutputWriter $writer): void
     {
         $this->writers->register($writer);
@@ -137,7 +170,7 @@ class CarveConverter implements CarveConverterInterface
         if ($cached instanceof RenderedCarve) {
             return $cached;
         }
-        $result = Carve::renderWithDocumentTransforms($carve, self::transforms($this->options), $this->options);
+        $result = Carve::renderWithDocumentTransforms($carve, self::transforms($this->options), self::withTocRenderers($this->options));
         [$toc, $frontmatter] = $this->metadata(Carve::parse($carve, $this->parseOptions()));
         $rendered = new RenderedCarve(
             $carve,
@@ -182,7 +215,7 @@ class CarveConverter implements CarveConverterInterface
             return $cached['rendered'];
         }
 
-        $result = Carve::renderWithDocumentTransforms($source, self::transforms($options), $options);
+        $result = Carve::renderWithDocumentTransforms($source, self::transforms($options), self::withTocRenderers($options));
         $parseOptions = $this->parseOptions($options);
         $tree = Carve::parse($source, $parseOptions);
         $entries = $this->includeRoot === null || isset($this->options['includes'])

@@ -6,8 +6,10 @@ namespace MarkupCarve\LaravelCarve\Tests\Service;
 
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\Navigation;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\LaravelCarve\Service\CarveConverter;
@@ -190,9 +192,59 @@ class ExtensionFactoryTest extends TestCase
         );
         self::assertStringContainsString(
             'class="toc"',
-            $render(['type' => 'table_of_contents', 'max_level' => 2], "# One\n\n## Two\n"),
+            (new CarveConverter(['extensions' => $this->factory->create(['type' => 'table_of_contents', 'max_level' => 2])]))
+                ->toHtml("# One\n\n## Two\n"),
         );
         self::assertStringContainsString('<img', $render('img_fence', "```img\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>\n```\n"));
+    }
+
+    public function testTableOfContentsUsesStandardRenderer(): void
+    {
+        $converter = new CarveConverter(['extensions' => $this->factory->create('table_of_contents')]);
+        $result = $converter->render("= A\n\n== B\n");
+
+        self::assertStringContainsString('<nav', $result->html);
+        self::assertStringContainsString('<a href="#B">B</a>', $result->html);
+        self::assertNotContains('extension-fallback-rendered', array_column($result->warnings, 'rule'));
+    }
+
+    public function testTocPlacementUsesStandardRenderer(): void
+    {
+        $converter = new CarveConverter(['extensions' => $this->factory->create('toc_placement')]);
+        $result = $converter->render("Intro.\n\n::: toc\n:::\n\n= A\n\n== B\n");
+
+        self::assertStringContainsString('<nav', $result->html);
+        self::assertStringContainsString('<a href="#B">B</a>', $result->html);
+        self::assertNotContains('extension-fallback-rendered', array_column($result->warnings, 'rule'));
+    }
+
+    public function testTocDefinitionsInsideAProviderUseStandardRenderers(): void
+    {
+        $definitions = [
+            Navigation::tableOfContents(),
+            Navigation::tocPlacement(),
+        ];
+        $converter = new CarveConverter(['extensions' => [new Bundle($definitions)]]);
+        $result = $converter->render("Intro.\n\n::: toc\n:::\n\n= A\n\n== B\n");
+
+        self::assertSame(2, substr_count($result->html, '<nav'));
+        self::assertNotContains('extension-fallback-rendered', array_column($result->warnings, 'rule'));
+    }
+
+    public function testHostRendererOverridesStandardTocRenderer(): void
+    {
+        $converter = new CarveConverter([
+            'extensions' => [
+                ...$this->factory->create('table_of_contents'),
+                ...$this->factory->create('toc_placement'),
+            ],
+            'renderers' => ['carve.toc' => static fn (): string => '<nav class="host-toc">custom</nav>'],
+        ]);
+        $result = $converter->render("::: toc\n:::\n\n= A\n\n== B\n");
+
+        self::assertStringContainsString('<nav class="host-toc">custom</nav>', $result->html);
+        self::assertStringContainsString('<nav class="toc"', $result->html);
+        self::assertNotContains('extension-fallback-rendered', array_column($result->warnings, 'rule'));
     }
 
     public function testNamedTypeOptionsAreChecked(): void

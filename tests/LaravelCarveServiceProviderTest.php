@@ -66,6 +66,20 @@ class LaravelCarveServiceProviderTest extends TestCase
         self::assertStringContainsString('Included text', $manager->toHtml('{{ page.crv }}', 'custom'));
     }
 
+    public function testProfileRendererOverridesTocDefault(): void
+    {
+        config()->set('carve.converters.custom', [
+            'extensions' => ['table_of_contents'],
+            'renderers' => ['carve.toc' => static fn (): string => '<nav class="custom-toc">custom</nav>'],
+        ]);
+        $this->app()->forgetInstance(CarveManager::class);
+
+        $result = $this->app()->make(CarveManager::class)->render("= A\n\n== B\n", 'custom');
+
+        self::assertStringContainsString('<nav class="custom-toc">custom</nav>', $result->html);
+        self::assertNotContains('extension-fallback-rendered', array_column($result->warnings, 'rule'));
+    }
+
     public function testDefaultConfigHasSafeMode(): void
     {
         /** @var \Illuminate\Contracts\Config\Repository $config */
